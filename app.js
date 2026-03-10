@@ -742,7 +742,7 @@ function buildRISFormHTML(r) {
           <td>Printed Name :<br>&nbsp;</td>
         </tr>
         <tr>
-          <td class="sig-desig">Designation :</td>
+          <td class="sig-desig">Designation : <span style="font-weight:600;color:#000;">${r.designation || r.office || ''}</span></td>
           <td class="sig-desig">Chief AO, FAD</td>
           <td class="sig-desig">AO I, FAD</td>
           <td class="sig-desig">Designation :</td>
