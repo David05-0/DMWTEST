@@ -183,7 +183,8 @@ function setupApp() {
         <span class="icon">📋</span> All Requests
         <span class="nav-badge" id="pending-badge" style="display:none">0</span>
       </div>
-      <div class="nav-item" onclick="navigate('page-manage-supplies')"><span class="icon">🛠️</span> Manage Supplies</div>`;
+      <div class="nav-item" onclick="navigate('page-manage-supplies')"><span class="icon">🛠️</span> Manage Supplies</div>
+      <div class="nav-item" onclick="navigate('page-manage-accounts')"><span class="icon">👥</span> Manage Accounts</div>`;
   } else {
     nav.innerHTML = `
       <div class="nav-section-label">Requests</div>
