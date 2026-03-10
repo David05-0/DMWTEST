@@ -345,25 +345,32 @@ function startSuppliesListener() {
   });
 }
 
+let manageSuppliesFilter = '';
+function filterManageSupplies(v) { manageSuppliesFilter = v; renderManageSupplies(); }
+
 function renderManageSupplies() {
-  const tb = document.getElementById('manage-supplies-table');
-  if (!SUPPLIES.length) {
-    tb.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">📦</div><p>No supplies yet</p></div></td></tr>`;
+  const tb   = document.getElementById('manage-supplies-table');
+  const data = SUPPLIES.filter(s => s.name.toLowerCase().includes(manageSuppliesFilter.toLowerCase()));
+  if (!data.length) {
+    tb.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">📦</div><p>No supplies found</p></div></td></tr>`;
     return;
   }
-  tb.innerHTML = SUPPLIES.map(s => `
-    <tr>
-      <td><strong>${s.name}</strong></td>
+  tb.innerHTML = data.map(s => {
+    const sid  = s._id || String(s.id || '');
+    const sname = s.name.replace(/'/g, "\'");
+    return `<tr>
+      <td style="min-width:220px;"><strong>${s.name}</strong></td>
       <td>${s.unit}</td>
       <td>${s.qty}</td>
       <td>${s.balance !== null && s.balance !== undefined ? s.balance : '—'}</td>
       <td><strong>${s.available}</strong></td>
       <td>${s.note ? `<span class="badge badge-util">${s.note}</span>` : '—'}</td>
       <td>
-        <button class="btn btn-outline btn-sm" onclick="openSupplyModal('${s._id || ''}')">✏️ Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteSupplyPrompt('${s._id || ''}','${s.name.replace(/'/g,"\'")}') " style="margin-left:4px">🗑️ Delete</button>
+        <button class="btn btn-outline btn-sm" onclick="openSupplyModal('${sid}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteSupplyPrompt('${sid}','${sname}')" style="margin-left:4px">🗑️ Delete</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 let editingSupplyId = null;
