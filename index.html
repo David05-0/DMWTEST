@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DMW RO-CAR | Supply Procurement System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="badge">⚡ DMW RO-CAR</div>
+      <h1>Supply Procurement<br>& Request System</h1>
+      <p>Department of Migrant Workers – CAR Region</p>
+    </div>
+    <div class="role-tabs">
+      <div class="role-tab active" onclick="selectRole('admin')">🔐 Admin</div>
+      <div class="role-tab" onclick="selectRole('employee')">👤 Employee</div>
+    </div>
+    <div class="login-error" id="login-error">Invalid credentials. Please try again.</div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="login-user" placeholder="Enter username" />
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="Enter password" />
+    </div>
+    <button class="btn-login" onclick="doLogin()">Sign In →</button>
+    <div class="login-hint">
+      Admin: <span>admin / admin123</span> &nbsp;|&nbsp; Employee: <span>employee / emp123</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-brand">
+      <div class="chip">DMW RO-CAR</div>
+      <h2>Procurement<br>System</h2>
+      <p>Supply Management Portal</p>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav">
+      <!-- populated by JS -->
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="user-avatar">A</div>
+      <div class="user-info">
+        <div class="name" id="user-name">Admin</div>
+        <div class="role" id="user-role-label">Administrator</div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()" title="Logout">⏻</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <h3 id="page-title">Dashboard</h3>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </div>
+
+    <!-- ADMIN PAGES -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid" id="dash-stats"></div>
+      <div class="card">
+        <div class="card-header">
+          <h4>📋 Recent Requests</h4>
+          <button class="btn btn-outline btn-sm" onclick="navigate('page-requests')">View All</button>
+        </div>
+        <div class="card-body table-wrap">
+          <table><thead><tr>
+            <th>RIS No.</th><th>Requestor</th><th>Division</th><th>Date</th><th>Items</th><th>Status</th>
+          </tr></thead>
+          <tbody id="dash-recent-table"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-inventory">
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h4>📦 Supply Inventory — As of January 20, 2026</h4>
+          <div class="search-bar"><input type="text" placeholder="Search supplies…" oninput="filterInventory(this.value)" /></div>
+        </div>
+        <div class="card-body table-wrap">
+          <table><thead><tr>
+            <th>Description</th><th>Unit</th><th>Original Qty</th><th>Balance</th><th>Available</th><th>Utilization</th><th>Note</th>
+          </tr></thead>
+          <tbody id="inventory-table"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-requests">
+      <div class="card">
+        <div class="card-header">
+          <h4>📄 All RIS Requests</h4>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select onchange="filterRequests(this.value)" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:'DM Sans';font-size:13px;outline:none;">
+              <option value="all">All Status</option>
+              <option value="Pending">Pending</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Issued">Issued</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body table-wrap">
+          <table><thead><tr>
+            <th>RIS No.</th><th>Requestor</th><th>Division</th><th>Office</th><th>Date</th><th>Items</th><th>Status</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="requests-table"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMPLOYEE PAGES -->
+    <div class="page" id="page-new-request">
+      <!-- Step 1: Info -->
+      <div id="req-step1">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header"><h4>📝 Step 1 — Request Details</h4></div>
+          <div class="form-grid">
+            <div class="field">
+              <label>Division</label>
+              <input type="text" id="req-division" placeholder="e.g., Administrative Division" />
+            </div>
+            <div class="field">
+              <label>Office</label>
+              <input type="text" id="req-office" placeholder="e.g., Records Unit" />
+            </div>
+            <div class="field">
+              <label>Requestor Name</label>
+              <input type="text" id="req-name" placeholder="Your full name" />
+            </div>
+            <div class="field">
+              <label>Purpose / Remarks</label>
+              <input type="text" id="req-purpose" placeholder="Purpose of request" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-gold" onclick="goToStep2()">Next: Select Supplies →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Select supplies -->
+      <div id="req-step2" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;">
+          <div class="card">
+            <div class="card-header">
+              <h4>📦 Step 2 — Select Supplies</h4>
+              <div class="search-bar"><input type="text" placeholder="Search…" oninput="filterSupplyPicker(this.value)" /></div>
+            </div>
+            <div class="supply-grid" id="supply-picker"></div>
+          </div>
+          <div>
+            <div class="card" style="position:sticky;top:20px;">
+              <div class="card-header"><h4>🛒 Cart</h4></div>
+              <div id="cart-items">
+                <div class="empty-state"><div class="icon">🛒</div><p>No items added yet</p></div>
+              </div>
+              <div style="padding:16px 16px 0;">
+                <button class="btn btn-gold" style="width:100%" onclick="submitRequest()">Submit Request</button>
+                <button class="btn btn-outline" style="width:100%;margin-top:8px" onclick="backToStep1()">← Back</button>
+              </div>
+              <div style="height:16px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-my-requests">
+      <div class="card">
+        <div class="card-header">
+          <h4>📋 My Requests</h4>
+        </div>
+        <div class="card-body table-wrap">
+          <table><thead><tr>
+            <th>RIS No.</th><th>Date</th><th>Division</th><th>Items</th><th>Status</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="my-requests-table"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL: RIS Detail -->
+<div class="modal-overlay" id="modal-ris">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-ris-title">RIS Details</h3>
+      <button class="modal-close" onclick="closeModal('modal-ris')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-ris-body"></div>
+    <div class="modal-footer" id="modal-ris-footer"></div>
+  </div>
+</div>
+
+<!-- MODAL: Print RIS Preview -->
+<div class="modal-overlay" id="modal-print-ris">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h3>Print RIS - Official Form</h3>
+      <button class="modal-close" onclick="closeModal('modal-print-ris')">&#10005;</button>
+    </div>
+    <div class="modal-body" id="modal-print-ris-body" style="padding:16px 20px;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-print-ris')">Close</button>
+      <button class="btn btn-primary" onclick="printRIS()">Print RIS</button>
+    </div>
+  </div>
+</div>
+<div id="print-ris-area"></div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
