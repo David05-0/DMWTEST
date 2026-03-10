@@ -140,6 +140,8 @@ function doLogin() {
 }
 
 function launchApp() {
+  // Save session so page refresh restores login state
+  sessionStorage.setItem('dmw_session', JSON.stringify({ user: currentUser, role: currentRole }));
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   setupApp();
@@ -147,15 +149,41 @@ function launchApp() {
   startSuppliesListener();
   startAccountsListener();
 }
+
+// Restore session on page refresh
+(function restoreSession() {
+  const saved = sessionStorage.getItem('dmw_session');
+  if (!saved) return;
+  try {
+    const { user, role } = JSON.parse(saved);
+    if (!user || !role) return;
+    currentUser = user;
+    currentRole = role;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    setupApp();
+    startListener();
+    startSuppliesListener();
+    startAccountsListener();
+  } catch(e) {
+    sessionStorage.removeItem('dmw_session');
+  }
+})();
 document.getElementById('login-pass').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
 });
 
 function doLogout() {
+  document.getElementById('modal-logout-confirm').classList.add('open');
+}
+
+function confirmLogout() {
+  closeModal('modal-logout-confirm');
   stopListener();
   if (suppliesUnsubscribe)  { suppliesUnsubscribe();  suppliesUnsubscribe  = null; }
-  if (accountsUnsubscribe) { accountsUnsubscribe(); accountsUnsubscribe = null; }
+  if (accountsUnsubscribe)  { accountsUnsubscribe();  accountsUnsubscribe  = null; }
   ACCOUNTS = [];
+  sessionStorage.removeItem('dmw_session');
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-user').value = '';
@@ -983,6 +1011,9 @@ db.collection('accounts').get().then(snap => {
   ACCOUNTS = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
 }).catch(() => {});
 
+document.getElementById('modal-logout-confirm').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-logout-confirm');
+});
 document.getElementById('modal-ris').addEventListener('click', function(e) {
   if (e.target === this) closeModal('modal-ris');
 });
