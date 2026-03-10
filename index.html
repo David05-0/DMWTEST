@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DMW RO-CAR | Supply Procurement System</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=7">
+<link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
 
@@ -127,7 +127,13 @@
           <div class="form-grid">
             <div class="field">
               <label>Division</label>
-              <input type="text" id="req-division" placeholder="e.g., Administrative Division" />
+              <select id="req-division" style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:10px;font-family:'DM Sans';font-size:14px;color:var(--text);background:var(--white);outline:none;">
+              <option value="">-- Select Division --</option>
+              <option value="Migrant Workers Processing Division">Migrant Workers Processing Division</option>
+              <option value="Migrant Workers Protection Division">Migrant Workers Protection Division</option>
+              <option value="Migrant Workers Welfare and Reintegration Services Division">Migrant Workers Welfare and Reintegration Services Division</option>
+              <option value="Finance and Administration Division">Finance and Administration Division</option>
+              </select>
             </div>
             <div class="field">
               <label>Designation</label>
@@ -257,7 +263,13 @@
         </div>
         <div class="field" style="grid-column:1/-1">
           <label>Division</label>
-          <input type="text" id="acct-division" placeholder="e.g., Administrative Division" />
+<select id="acct-division" style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:10px;font-family:'DM Sans';font-size:14px;color:var(--text);background:var(--white);outline:none;">
+              <option value="">-- Select Division --</option>
+              <option value="Migrant Workers Processing Division">Migrant Workers Processing Division</option>
+              <option value="Migrant Workers Protection Division">Migrant Workers Protection Division</option>
+              <option value="Migrant Workers Welfare and Reintegration Services Division">Migrant Workers Welfare and Reintegration Services Division</option>
+              <option value="Finance and Administration Division">Finance and Administration Division</option>
+          </select>
         </div>
       </div>
     </div>
@@ -411,6 +423,6 @@ function getCollection(name)     { return db.collection(name); }
 function getDocRef(colName, id)  { return db.collection(colName).doc(id); }
 </script>
 
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>
