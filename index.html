@@ -201,11 +201,20 @@
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">
           <h4>📦 Manage Supplies</h4>
-          <button class="btn btn-gold" onclick="openSupplyModal()">+ Add New Supply</button>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <div class="search-bar"><input type="text" placeholder="Search supplies…" oninput="filterManageSupplies(this.value)" /></div>
+            <button class="btn btn-gold" onclick="openSupplyModal()">+ Add New Supply</button>
+          </div>
         </div>
-        <div class="card-body table-wrap">
-          <table><thead><tr>
-            <th>Description</th><th>Unit</th><th>Original Qty</th><th>Balance</th><th>Available</th><th>Note</th><th>Actions</th>
+        <div class="card-body" style="overflow-x:auto;">
+          <table style="width:100%;min-width:700px;"><thead><tr>
+            <th style="min-width:220px;">Description</th>
+            <th style="width:80px;">Unit</th>
+            <th style="width:100px;">Original Qty</th>
+            <th style="width:80px;">Balance</th>
+            <th style="width:90px;">Available</th>
+            <th style="min-width:140px;">Note</th>
+            <th style="width:160px;">Actions</th>
           </tr></thead>
           <tbody id="manage-supplies-table"></tbody></table>
         </div>
@@ -378,6 +387,7 @@
 //    Get it from: Firebase Console → Your Project →
 //    Project Settings → Your Apps → SDK setup & config
 // ═══════════════════════════════════════════════════════
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyCc9aLE5H21xD5seVditEn0vMNPCNqVIWc",
   authDomain: "dmwtest.firebaseapp.com",
@@ -387,6 +397,7 @@ const firebaseConfig = {
   appId: "1:33188895710:web:a52cb990f1d7d64914db4f",
   measurementId: "G-7FDQT79H2J"
 };
+
 firebase.initializeApp(firebaseConfig);
 const db              = firebase.firestore();
 const collection      = (ref, path)     => db.collection(path);
