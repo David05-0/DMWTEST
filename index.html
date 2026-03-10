@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DMW RO-CAR | Supply Procurement System</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=5">
+<link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
 
@@ -192,9 +192,6 @@
       </div>
     </div>
 
-  </div>
-</div>
-
 
     <!-- ADMIN: Manage Supplies -->
     <div class="page" id="page-manage-supplies">
@@ -221,7 +218,6 @@
       </div>
     </div>
 
-
     <!-- ADMIN: Manage Accounts -->
     <div class="page" id="page-manage-accounts">
       <div class="card">
@@ -237,6 +233,9 @@
         </div>
       </div>
     </div>
+
+  </div><!-- end .main -->
+</div><!-- end #app -->
 
 <!-- MODAL: Add/Edit Account -->
 <div class="modal-overlay" id="modal-account">
@@ -415,6 +414,6 @@ function getCollection(name)     { return db.collection(name); }
 function getDocRef(colName, id)  { return db.collection(colName).doc(id); }
 </script>
 
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
