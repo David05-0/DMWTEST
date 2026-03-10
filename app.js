@@ -394,7 +394,7 @@ function openSupplyModal(supplyId) {
   document.getElementById('modal-supply-title').textContent = supplyId ? '✏️ Edit Supply' : '➕ Add New Supply';
 
   if (supplyId) {
-    const s = SUPPLIES.find(x => x._id === supplyId);
+    const s = SUPPLIES.find(x => (x._id || String(x.id || '')) === supplyId);
     if (!s) return;
     document.getElementById('supply-name').value    = s.name;
     document.getElementById('supply-unit').value    = s.unit;
@@ -434,11 +434,26 @@ async function saveSupply() {
 
   try {
     if (editingSupplyId) {
-      await db.collection('supplies').doc(editingSupplyId).update(data);
+      const existing = SUPPLIES.find(x => (x._id || String(x.id || '')) === editingSupplyId);
+      if (existing && existing._id) {
+        // Firestore supply — update in DB
+        await db.collection('supplies').doc(existing._id).update(data);
+      } else {
+        // Static supply — save as new Firestore doc and update local array
+        data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        data.id = existing ? existing.id : Date.now();
+        const ref = await db.collection('supplies').add(data);
+        // Update the local static entry with the new _id
+        if (existing) {
+          Object.assign(existing, data);
+          existing._id = ref.id;
+        }
+        renderManageSupplies();
+      }
       showToast('✅ Supply updated!');
     } else {
       data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      data.id = Date.now(); // local numeric id for cart compatibility
+      data.id = Date.now();
       await db.collection('supplies').add(data);
       showToast('✅ Supply added!');
     }
