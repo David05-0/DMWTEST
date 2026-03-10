@@ -158,7 +158,12 @@
   }
 
   /* ── APP SHELL ── */
-  #app { display: none; height: 100vh; overflow: hidden; }
+  #app {
+    display: none;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
 
   /* Sidebar */
   .sidebar {
@@ -261,17 +266,21 @@
     margin-left: 260px;
     height: 100vh;
     overflow-y: auto;
+    overflow-x: hidden;
     background: var(--gray-50);
   }
   .topbar {
     background: var(--white);
     border-bottom: 1px solid var(--gray-200);
-    padding: 18px 32px;
+    padding: 16px 28px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    position: sticky; top: 0;
+    position: sticky;
+    top: 0;
     z-index: 50;
+    min-height: 60px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   }
   .topbar h3 {
     font-family: 'Syne', sans-serif;
@@ -280,7 +289,7 @@
     color: var(--text);
   }
   .topbar-actions { display: flex; gap: 10px; }
-  .page { display: none; padding: 32px; }
+  .page { display: none; padding: 24px 28px; min-height: calc(100vh - 60px); }
   .page.active { display: block; }
 
   /* Cards & Stats */
@@ -313,13 +322,18 @@
     box-shadow: var(--shadow);
     overflow: hidden;
     margin-bottom: 24px;
+    width: 100%;
+    box-sizing: border-box;
   }
   .card-header {
-    padding: 20px 24px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--gray-100);
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    min-height: 58px;
   }
   .card-header h4 {
     font-family: 'Syne', sans-serif;
