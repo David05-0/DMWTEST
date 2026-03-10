@@ -7,24 +7,27 @@
 //  2. Create a project → Add Web App → copy the config below
 //  3. In Firestore Database → Create database → Start in test mode
 // ════════════════════════════════════════════════════════════
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {
-  getFirestore, collection, doc,
-  addDoc, updateDoc, onSnapshot,
-  query, orderBy, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+ // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
 
-const firebaseConfig = {
-  apiKey:            "REPLACE_WITH_YOUR_API_KEY",
-  authDomain:        "REPLACE_WITH_YOUR_AUTH_DOMAIN",
-  projectId:         "REPLACE_WITH_YOUR_PROJECT_ID",
-  storageBucket:     "REPLACE_WITH_YOUR_STORAGE_BUCKET",
-  messagingSenderId: "REPLACE_WITH_YOUR_MESSAGING_SENDER_ID",
-  appId:             "REPLACE_WITH_YOUR_APP_ID"
-};
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyCc9aLE5H21xD5seVditEn0vMNPCNqVIWc",
+    authDomain: "dmwtest.firebaseapp.com",
+    projectId: "dmwtest",
+    storageBucket: "dmwtest.firebasestorage.app",
+    messagingSenderId: "33188895710",
+    appId: "1:33188895710:web:a52cb990f1d7d64914db4f",
+    measurementId: "G-7FDQT79H2J"
+  };
 
-const fbApp = initializeApp(firebaseConfig);
-const db    = getFirestore(fbApp);
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
 
 // ════════════════════════════════════════════════════════════
 // STATIC DATA
