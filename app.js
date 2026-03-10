@@ -368,8 +368,8 @@ function renderManageSupplies() {
       + '<td><strong>' + s.available + '</strong></td>'
       + '<td>' + noteHtml + '</td>'
       + '<td>'
-      +   '<button class="btn btn-outline btn-sm" onclick="openSupplyModal('' + sid + '')">✏️ Edit</button>'
-      +   '<button class="btn btn-danger btn-sm" onclick="deleteSupplyPrompt('' + sid + '')" style="margin-left:4px">🗑️ Delete</button>'
+      +   '<button class="btn btn-outline btn-sm" onclick="openSupplyModal(\'' + sid + '\')">&#9999;&#65039; Edit</button>'
+      +   '<button class="btn btn-danger btn-sm" onclick="deleteSupplyPrompt(\'' + sid + '\')" style="margin-left:4px">&#128465;&#65039; Delete</button>'
       + '</td>'
       + '</tr>';
   });
