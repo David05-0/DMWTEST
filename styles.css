@@ -160,9 +160,6 @@
   /* ── APP SHELL ── */
   #app {
     display: none;
-    height: 100vh;
-    overflow: hidden;
-    position: relative;
   }
 
   /* Sidebar */
@@ -266,8 +263,11 @@
 
   /* Main content */
   .main {
-    margin-left: 260px;
-    min-height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 260px;
+    right: 0;
+    bottom: 0;
     overflow-y: auto;
     background: var(--gray-50);
   }
