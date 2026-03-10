@@ -141,7 +141,7 @@ function doLogin() {
 
 function launchApp() {
   document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
+  document.getElementById('app').style.display = 'block';
   setupApp();
   startListener();
   startSuppliesListener();
