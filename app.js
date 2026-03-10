@@ -8,26 +8,26 @@
 //  3. In Firestore Database → Create database → Start in test mode
 // ════════════════════════════════════════════════════════════
  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyCc9aLE5H21xD5seVditEn0vMNPCNqVIWc",
-    authDomain: "dmwtest.firebaseapp.com",
-    projectId: "dmwtest",
-    storageBucket: "dmwtest.firebasestorage.app",
-    messagingSenderId: "33188895710",
-    appId: "1:33188895710:web:a52cb990f1d7d64914db4f",
-    measurementId: "G-7FDQT79H2J"
-  };
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCc9aLE5H21xD5seVditEn0vMNPCNqVIWc",
+  authDomain: "dmwtest.firebaseapp.com",
+  projectId: "dmwtest",
+  storageBucket: "dmwtest.firebasestorage.app",
+  messagingSenderId: "33188895710",
+  appId: "1:33188895710:web:a52cb990f1d7d64914db4f",
+  measurementId: "G-7FDQT79H2J"
+};
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
 // ════════════════════════════════════════════════════════════
 // STATIC DATA
