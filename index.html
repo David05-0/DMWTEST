@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DMW RO-CAR | Supply Procurement System</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=11">
+<link rel="stylesheet" href="styles.css?v=12">
 </head>
 <body>
 
@@ -31,6 +31,9 @@
       <input type="password" id="login-pass" placeholder="Enter password" />
     </div>
     <button class="btn-login" onclick="doLogin()">Sign In →</button>
+    <div class="login-hint">
+      Admin: <span>admin / admin123</span> &nbsp;|&nbsp; Employee: <span>employee / emp123</span>
+    </div>
   </div>
 </div>
 
@@ -219,6 +222,7 @@
             <th style="width:100px;">Original Qty</th>
             <th style="width:80px;">Balance</th>
             <th style="width:90px;">Available</th>
+            <th style="width:110px;">Unit Cost</th>
             <th style="min-width:140px;">Note</th>
             <th style="width:160px;">Actions</th>
           </tr></thead>
@@ -329,6 +333,10 @@
           <input type="number" id="supply-balance" placeholder="optional" min="0" />
         </div>
         <div class="field">
+          <label>Unit Cost ₱ <span style="font-weight:400;color:var(--gray-400)">(optional)</span></label>
+          <input type="number" id="supply-unit-cost" placeholder="e.g., 125.00" min="0" step="0.01" />
+        </div>
+        <div class="field">
           <label>Note <span style="font-weight:400;color:var(--gray-400)">(optional)</span></label>
           <input type="text" id="supply-note" placeholder="e.g., for utility use only" />
         </div>
@@ -358,6 +366,36 @@
   </div>
 </div>
 
+
+    <!-- ADMIN: Supply Ledger -->
+    <div class="page" id="page-supply-ledger">
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h4>📅 Monthly Supply Ledger</h4>
+          <span style="font-size:12px;color:var(--gray-400);">Automatically tallied from Issued requests</span>
+        </div>
+        <div class="card-body" style="padding:16px;">
+          <div id="supply-ledger-wrap"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN: IAR -->
+    <div class="page" id="page-iar">
+      <div class="card">
+        <div class="card-header">
+          <h4>✅ Inspection & Acceptance Reports</h4>
+          <button class="btn btn-gold" onclick="openIARModal()">+ New IAR</button>
+        </div>
+        <div class="card-body" style="overflow-x:auto;">
+          <table style="width:100%;"><thead><tr>
+            <th>IAR No.</th><th>Supplier</th><th>PO No.</th><th>Date</th><th>Items</th><th>Status</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="iar-table"></tbody></table>
+        </div>
+      </div>
+    </div>
+
 <!-- MODAL: Logout Confirm -->
 <div class="modal-overlay" id="modal-logout-confirm">
   <div class="modal" style="max-width:380px;">
@@ -371,6 +409,77 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-logout-confirm')">Cancel</button>
       <button class="btn btn-danger" onclick="confirmLogout()">Yes, Log Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Edit RIS Items -->
+<div class="modal-overlay" id="modal-edit-ris">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="edit-ris-title">Edit Request Items</h3>
+      <button class="modal-close" onclick="closeModal('modal-edit-ris')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">Edit the items in this employee request. Changes are saved to Firestore.</p>
+      <div id="edit-ris-items"></div>
+      <button class="btn btn-outline btn-sm" onclick="addEditRISItem()" style="margin-top:8px;width:100%;">+ Add Item</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-edit-ris')">Cancel</button>
+      <button class="btn btn-gold" onclick="saveEditRIS()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: New IAR -->
+<div class="modal-overlay" id="modal-iar">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h3>📋 New Inspection & Acceptance Report</h3>
+      <button class="modal-close" onclick="closeModal('modal-iar')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:16px;">
+        <div class="field">
+          <label>IAR No.</label>
+          <input type="text" id="iar-no" placeholder="IAR-XXXXXX" />
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="iar-date" />
+        </div>
+        <div class="field">
+          <label>Supplier</label>
+          <input type="text" id="iar-supplier" placeholder="Supplier name" />
+        </div>
+        <div class="field">
+          <label>PO No. / Date</label>
+          <input type="text" id="iar-po" placeholder="e.g., PO-2025-001" />
+        </div>
+        <div class="field">
+          <label>Fund Cluster</label>
+          <input type="text" id="iar-fund" placeholder="e.g., 01" />
+        </div>
+        <div class="field">
+          <label>Requisitioning Office/Dept.</label>
+          <input type="text" id="iar-req-office" placeholder="e.g., Finance and Administration Division" />
+        </div>
+      </div>
+      <div style="margin-bottom:8px;">
+        <div style="display:grid;grid-template-columns:1fr 80px 80px 110px 36px;gap:8px;font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">
+          <span>Description</span><span style="text-align:center;">Unit</span><span style="text-align:center;">Qty</span><span style="text-align:right;">Unit Cost (₱)</span><span></span>
+        </div>
+        <div id="iar-items-wrap"></div>
+        <button class="btn btn-outline btn-sm" onclick="addIARItem()" style="width:100%;margin-top:8px;">+ Add Item</button>
+      </div>
+      <div style="padding:12px;background:var(--gray-50);border-radius:8px;font-size:12px;color:var(--gray-600);">
+        <strong>Inspected by:</strong> Inspection Committee &nbsp;|&nbsp; <strong>Received by:</strong> MARILOU S. BUGATAN — AO I (Supply Officer I)
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-iar')">Cancel</button>
+      <button class="btn btn-gold" onclick="saveIAR()">Save IAR</button>
     </div>
   </div>
 </div>
@@ -422,6 +531,7 @@
 const firebaseConfig = {
   apiKey: "AIzaSyCc9aLE5H21xD5seVditEn0vMNPCNqVIWc",
   authDomain: "dmwtest.firebaseapp.com",
+  databaseURL: "https://dmwtest-default-rtdb.firebaseio.com",
   projectId: "dmwtest",
   storageBucket: "dmwtest.firebasestorage.app",
   messagingSenderId: "33188895710",
@@ -446,6 +556,6 @@ function getCollection(name)     { return db.collection(name); }
 function getDocRef(colName, id)  { return db.collection(colName).doc(id); }
 </script>
 
-<script src="app.js?v=11"></script>
+<script src="app.js?v=12"></script>
 </body>
 </html>
