@@ -37,7 +37,7 @@ const SUPPLIES = [
   { id:27, name:'PAPER, multicopy, short, 80gsm',                    unit:'ream',   qty:10,  balance:null, note:'' },
   { id:28, name:'Certificate Holder, A4',                            unit:'piece',  qty:11,  balance:null, note:'' },
 ];
-SUPPLIES.forEach(s => { s.available = s.balance !== null ? s.balance : s.qty; });
+SUPPLIES.forEach(s => { s.available = s.balance !== null ? s.balance : s.qty; s.unitCost = s.unitCost || 0; });
 
 // ════════════════════════════════════════════════════════════
 // APP STATE
@@ -53,6 +53,8 @@ const ADMIN_CREDENTIAL = { user:'admin', pass:'admin123', name:'Admin Officer', 
 // Employee accounts loaded from Firestore 'accounts' collection
 let ACCOUNTS = []; // { _id, username, password, name, division, role:'Employee' }
 let accountsUnsubscribe = null;
+
+
 
 function startAccountsListener() {
   accountsUnsubscribe = db.collection('accounts').onSnapshot(snapshot => {
@@ -148,6 +150,7 @@ function launchApp() {
   startListener();
   startSuppliesListener();
   startAccountsListener();
+  startIARListener();
 }
 
 // Restore session on page refresh
@@ -165,6 +168,7 @@ function launchApp() {
     startListener();
     startSuppliesListener();
     startAccountsListener();
+  startIARListener();
   } catch(e) {
     sessionStorage.removeItem('dmw_session');
   }
@@ -212,7 +216,10 @@ function setupApp() {
         <span class="nav-badge" id="pending-badge" style="display:none">0</span>
       </div>
       <div class="nav-item" onclick="navigate('page-manage-supplies')"><span class="icon">🛠️</span> Manage Supplies</div>
-      <div class="nav-item" onclick="navigate('page-manage-accounts')"><span class="icon">👥</span> Manage Accounts</div>`;
+      <div class="nav-item" onclick="navigate('page-manage-accounts')"><span class="icon">👥</span> Manage Accounts</div>
+      <div class="nav-section-label">Reports</div>
+      <div class="nav-item" onclick="navigate('page-supply-ledger')"><span class="icon">📅</span> Supply Ledger</div>
+      <div class="nav-item" onclick="navigate('page-iar')"><span class="icon">✅</span> Acceptance Reports</div>`;
   } else {
     nav.innerHTML = `
       <div class="nav-section-label">Requests</div>
@@ -239,6 +246,8 @@ function navigate(pageId) {
     'page-my-requests':      'My Requests',
     'page-manage-supplies':  'Manage Supplies',
     'page-manage-accounts':  'Manage Employee Accounts',
+    'page-supply-ledger':    'Supply Ledger (Monthly)',
+    'page-iar':              'Inspection & Acceptance Reports',
   };
   document.getElementById('page-title').textContent = titles[pageId] || '';
   document.getElementById('topbar-actions').innerHTML = '';
@@ -249,6 +258,8 @@ function navigate(pageId) {
   if (pageId === 'page-my-requests')      renderMyRequests();
   if (pageId === 'page-manage-supplies')  renderManageSupplies();
   if (pageId === 'page-manage-accounts')  renderManageAccounts();
+  if (pageId === 'page-supply-ledger')    renderSupplyLedger();
+  if (pageId === 'page-iar')              renderIAR();
   if (pageId === 'page-new-request') {
     resetRequestForm();
     document.getElementById('topbar-actions').innerHTML =
@@ -424,17 +435,19 @@ function openSupplyModal(supplyId) {
   if (supplyId) {
     const s = SUPPLIES.find(x => (x._id || String(x.id || '')) === supplyId);
     if (!s) return;
-    document.getElementById('supply-name').value    = s.name;
-    document.getElementById('supply-unit').value    = s.unit;
-    document.getElementById('supply-qty').value     = s.qty;
-    document.getElementById('supply-balance').value = s.balance !== null && s.balance !== undefined ? s.balance : '';
-    document.getElementById('supply-note').value    = s.note || '';
+    document.getElementById('supply-name').value      = s.name;
+    document.getElementById('supply-unit').value      = s.unit;
+    document.getElementById('supply-qty').value       = s.qty;
+    document.getElementById('supply-balance').value   = s.balance !== null && s.balance !== undefined ? s.balance : '';
+    document.getElementById('supply-unit-cost').value = s.unitCost || '';
+    document.getElementById('supply-note').value      = s.note || '';
   } else {
-    document.getElementById('supply-name').value    = '';
-    document.getElementById('supply-unit').value    = '';
-    document.getElementById('supply-qty').value     = '';
-    document.getElementById('supply-balance').value = '';
-    document.getElementById('supply-note').value    = '';
+    document.getElementById('supply-name').value      = '';
+    document.getElementById('supply-unit').value      = '';
+    document.getElementById('supply-qty').value       = '';
+    document.getElementById('supply-balance').value   = '';
+    document.getElementById('supply-unit-cost').value = '';
+    document.getElementById('supply-note').value      = '';
   }
   modal.classList.add('open');
 }
@@ -449,10 +462,14 @@ async function saveSupply() {
 
   if (!name || !unit) { showToast('Please fill in Name and Unit.'); return; }
 
+  const unitCostRaw = document.getElementById('supply-unit-cost').value.trim();
+  const unitCost    = unitCostRaw !== '' ? parseFloat(unitCostRaw) : 0;
+
   const data = {
     name, unit, qty,
     balance: balance,
     note,
+    unitCost,
     available: balance !== null ? balance : qty,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
   };
@@ -539,6 +556,7 @@ function renderRequests() {
       <td><span class="badge badge-${r.status.toLowerCase()}">${r.status}</span></td>
       <td>
         <button class="btn btn-outline btn-sm" onclick="viewRIS('${r.risNo}',true)">View</button>
+        <button class="btn btn-outline btn-sm" onclick="openEditRIS('${r.risNo}')" style="margin-left:4px" title="Edit Items">✏️</button>
         ${r.status === 'Pending' ? `
           <button class="btn btn-success btn-sm" onclick="updateStatus('${r.risNo}','Approved')" style="margin-left:4px">✓</button>
           <button class="btn btn-danger btn-sm"  onclick="updateStatus('${r.risNo}','Rejected')" style="margin-left:4px">✕</button>` : ''}
@@ -996,6 +1014,301 @@ async function confirmDeleteAccount() {
   }
 }
 
+
+// ════════════════════════════════════════════════════════════
+// SUPPLY LEDGER — Monthly balance tracking
+// ════════════════════════════════════════════════════════════
+function renderSupplyLedger() {
+  const wrap = document.getElementById('supply-ledger-wrap');
+  if (!wrap) return;
+
+  // Build monthly totals from Issued requests
+  const issued = REQUESTS.filter(r => r.status === 'Issued');
+  const months = {};
+  issued.forEach(r => {
+    const d = new Date(r.date || r.createdAt?.toDate?.() || Date.now());
+    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    const label = d.toLocaleString('en-PH',{month:'long', year:'numeric'});
+    if (!months[key]) months[key] = { label, items: {} };
+    (r.items || []).forEach(it => {
+      if (!months[key].items[it.name]) months[key].items[it.name] = { unit: it.unit, qty: 0 };
+      months[key].items[it.name].qty += Number(it.qty) || 0;
+    });
+  });
+
+  const sortedKeys = Object.keys(months).sort();
+  if (!sortedKeys.length) {
+    wrap.innerHTML = '<div class="empty-state"><div class="icon">📅</div><p>No issued requests yet. Issued requests will appear here as monthly totals.</p></div>';
+    return;
+  }
+
+  wrap.innerHTML = sortedKeys.map(key => {
+    const m = months[key];
+    const rows = Object.entries(m.items).map(([name, v]) =>
+      '<tr><td>' + name + '</td><td>' + v.unit + '</td><td><strong>' + v.qty + '</strong></td></tr>'
+    ).join('');
+    return '<div class="card" style="margin-bottom:20px;">'
+      + '<div class="card-header"><h4>📅 ' + m.label + '</h4>'
+      + '<span style="font-size:12px;color:var(--gray-400);">' + Object.keys(m.items).length + ' supply types issued</span></div>'
+      + '<div class="card-body" style="overflow-x:auto;">'
+      + '<table style="width:100%;"><thead><tr><th>Supply Description</th><th>Unit</th><th>Total Qty Issued</th></tr></thead>'
+      + '<tbody>' + rows + '</tbody></table></div></div>';
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// EDIT RIS ITEMS — Admin edits employee requisitioned supplies
+// ════════════════════════════════════════════════════════════
+let editingRISNo = null;
+let editRISItems = [];
+
+function openEditRIS(risNo) {
+  const r = REQUESTS.find(x => x.risNo === risNo);
+  if (!r) return;
+  editingRISNo = risNo;
+  editRISItems = r.items.map(i => ({ ...i }));
+
+  document.getElementById('edit-ris-title').textContent = 'Edit Items — ' + risNo;
+  renderEditRISItems();
+  document.getElementById('modal-edit-ris').classList.add('open');
+}
+
+function renderEditRISItems() {
+  const wrap = document.getElementById('edit-ris-items');
+  if (!editRISItems.length) {
+    wrap.innerHTML = '<p style="color:var(--gray-400);text-align:center;padding:20px;">No items</p>';
+    return;
+  }
+  wrap.innerHTML = editRISItems.map((it, idx) => {
+    const opts = SUPPLIES.map(s =>
+      '<option value="' + s.name + '" ' + (s.name === it.name ? 'selected' : '') + '>' + s.name + '</option>'
+    ).join('');
+    return '<div style="display:grid;grid-template-columns:1fr 80px 80px 36px;gap:8px;align-items:center;margin-bottom:8px;">'
+      + '<select onchange="editRISItemField(' + idx + ',\'name\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:\'DM Sans\';">' + opts + '</select>'
+      + '<input type="text" value="' + it.unit + '" onchange="editRISItemField(' + idx + ',\'unit\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
+      + '<input type="number" value="' + it.qty + '" min="1" onchange="editRISItemField(' + idx + ',\'qty\',parseInt(this.value)||1)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
+      + '<button onclick="removeEditRISItem(' + idx + ')" style="background:var(--red);color:white;border:none;border-radius:8px;cursor:pointer;font-size:16px;height:36px;width:36px;">&#10005;</button>'
+      + '</div>';
+  }).join('');
+}
+
+function editRISItemField(idx, field, value) {
+  editRISItems[idx][field] = value;
+  if (field === 'name') {
+    const s = SUPPLIES.find(x => x.name === value);
+    if (s) editRISItems[idx].unit = s.unit;
+    renderEditRISItems();
+  }
+}
+
+function addEditRISItem() {
+  const s = SUPPLIES[0];
+  editRISItems.push({ id: s.id || s._id, name: s.name, unit: s.unit, qty: 1 });
+  renderEditRISItems();
+}
+
+function removeEditRISItem(idx) {
+  editRISItems.splice(idx, 1);
+  renderEditRISItems();
+}
+
+async function saveEditRIS() {
+  if (!editingRISNo || !editRISItems.length) { showToast('Add at least one item.'); return; }
+  const btn = document.querySelector('#modal-edit-ris .btn-gold');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+  try {
+    const snap = await db.collection('requests').where('risNo','==',editingRISNo).get();
+    if (snap.empty) { showToast('Request not found.'); return; }
+    await snap.docs[0].ref.update({ items: editRISItems });
+    showToast('✅ Items updated!');
+    closeModal('modal-edit-ris');
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to save.');
+  } finally {
+    if (btn) { btn.textContent = 'Save Changes'; btn.disabled = false; }
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// IAR — Inspection & Acceptance Report
+// ════════════════════════════════════════════════════════════
+let IARS = [];
+function startIARListener() {
+  db.collection('iars').orderBy('createdAt','asc').onSnapshot(snap => {
+    IARS = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    const active = document.querySelector('.page.active');
+    if (active && active.id === 'page-iar') renderIAR();
+  }, () => {});
+}
+
+function renderIAR() {
+  const tb = document.getElementById('iar-table');
+  if (!tb) return;
+  if (!IARS.length) {
+    tb.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">📋</div><p>No acceptance reports yet. Click "+ New IAR" to create one.</p></div></td></tr>';
+    return;
+  }
+  tb.innerHTML = [...IARS].reverse().map(iar => {
+    const statusBadge = iar.accepted
+      ? '<span class="badge badge-issued">Accepted</span>'
+      : '<span class="badge badge-pending">Pending</span>';
+    const total = (iar.items || []).reduce((s, i) => s + (Number(i.qty) || 0), 0);
+    return '<tr>'
+      + '<td><strong>' + iar.iarNo + '</strong></td>'
+      + '<td>' + (iar.supplier || '—') + '</td>'
+      + '<td>' + (iar.poNo || '—') + '</td>'
+      + '<td>' + (iar.date || '—') + '</td>'
+      + '<td>' + total + ' item(s)</td>'
+      + '<td>' + statusBadge + '</td>'
+      + '<td>'
+      + '<button class="btn btn-outline btn-sm" onclick="viewIAR(\'' + iar._id + '\')">View</button>'
+      + (!iar.accepted ? '<button class="btn btn-success btn-sm" onclick="acceptIAR(\'' + iar._id + '\')" style="margin-left:4px">Accept &amp; Add to Stock</button>' : '')
+      + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function openIARModal() {
+  document.getElementById('iar-no').value  = 'IAR-' + Date.now().toString().slice(-6);
+  document.getElementById('iar-supplier').value = '';
+  document.getElementById('iar-po').value  = '';
+  document.getElementById('iar-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('iar-fund').value = '';
+  document.getElementById('iar-req-office').value = '';
+  iarItems = [{ name: SUPPLIES[0].name, unit: SUPPLIES[0].unit, qty: 1, unitCost: 0 }];
+  renderIARItems();
+  document.getElementById('modal-iar').classList.add('open');
+}
+
+let iarItems = [];
+function renderIARItems() {
+  const wrap = document.getElementById('iar-items-wrap');
+  wrap.innerHTML = iarItems.map((it, idx) => {
+    const opts = SUPPLIES.map(s =>
+      '<option value="' + s.name + '" ' + (s.name === it.name ? 'selected' : '') + '>' + s.name + '</option>'
+    ).join('');
+    return '<div style="display:grid;grid-template-columns:1fr 80px 80px 110px 36px;gap:8px;align-items:center;margin-bottom:8px;">'
+      + '<select onchange="iarItemField(' + idx + ',\'name\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:\'DM Sans\';">' + opts + '</select>'
+      + '<input type="text" value="' + it.unit + '" placeholder="Unit" onchange="iarItemField(' + idx + ',\'unit\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
+      + '<input type="number" value="' + it.qty + '" min="1" placeholder="Qty" onchange="iarItemField(' + idx + ',\'qty\',parseInt(this.value)||1)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
+      + '<input type="number" value="' + (it.unitCost||0) + '" min="0" step="0.01" placeholder="Unit Cost" onchange="iarItemField(' + idx + ',\'unitCost\',parseFloat(this.value)||0)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:right;" />'
+      + '<button onclick="removeIARItem(' + idx + ')" style="background:var(--red);color:white;border:none;border-radius:8px;cursor:pointer;font-size:16px;height:36px;width:36px;">&#10005;</button>'
+      + '</div>';
+  }).join('');
+}
+
+function iarItemField(idx, field, value) {
+  iarItems[idx][field] = value;
+  if (field === 'name') {
+    const s = SUPPLIES.find(x => x.name === value);
+    if (s) { iarItems[idx].unit = s.unit; iarItems[idx].unitCost = s.unitCost || 0; }
+    renderIARItems();
+  }
+}
+
+function addIARItem() {
+  const s = SUPPLIES[0];
+  iarItems.push({ name: s.name, unit: s.unit, qty: 1, unitCost: s.unitCost || 0 });
+  renderIARItems();
+}
+
+function removeIARItem(idx) {
+  iarItems.splice(idx, 1);
+  renderIARItems();
+}
+
+async function saveIAR() {
+  const iarNo  = document.getElementById('iar-no').value.trim();
+  const supplier = document.getElementById('iar-supplier').value.trim();
+  const poNo   = document.getElementById('iar-po').value.trim();
+  const date   = document.getElementById('iar-date').value;
+  const fund   = document.getElementById('iar-fund').value.trim();
+  const reqOff = document.getElementById('iar-req-office').value.trim();
+
+  if (!supplier || !date || !iarItems.length) { showToast('Fill in Supplier, Date, and add at least one item.'); return; }
+  const btn = document.querySelector('#modal-iar .btn-gold');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+  try {
+    await db.collection('iars').add({
+      iarNo, supplier, poNo, date, fund, reqOffice: reqOff,
+      items: iarItems, accepted: false,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('✅ IAR saved!');
+    closeModal('modal-iar');
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to save IAR.');
+  } finally {
+    if (btn) { btn.textContent = 'Save IAR'; btn.disabled = false; }
+  }
+}
+
+async function acceptIAR(iarId) {
+  const iar = IARS.find(x => x._id === iarId);
+  if (!iar) return;
+  if (!confirm('Accept this IAR and add all items to supply inventory?')) return;
+  try {
+    // Add quantities to SUPPLIES in Firestore
+    for (const it of (iar.items || [])) {
+      const existing = SUPPLIES.find(s => s.name.toLowerCase() === it.name.toLowerCase());
+      if (existing) {
+        const newQty  = (existing.qty || 0) + (Number(it.qty) || 0);
+        const newBal  = (existing.available || 0) + (Number(it.qty) || 0);
+        const newData = { qty: newQty, balance: newBal, available: newBal, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+        if (it.unitCost > 0) newData.unitCost = it.unitCost;
+        if (existing._id) {
+          await db.collection('supplies').doc(existing._id).update(newData);
+        } else {
+          const ref = await db.collection('supplies').add({ ...existing, ...newData, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+          existing._id = ref.id;
+        }
+        Object.assign(existing, newData);
+      } else {
+        // New supply from IAR
+        const newSupply = { name: it.name, unit: it.unit, qty: Number(it.qty), balance: Number(it.qty), available: Number(it.qty), unitCost: it.unitCost || 0, note: '', createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+        const ref = await db.collection('supplies').add(newSupply);
+        SUPPLIES.push({ ...newSupply, _id: ref.id });
+      }
+    }
+    // Mark IAR as accepted
+    await db.collection('iars').doc(iarId).update({ accepted: true, acceptedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    showToast('✅ IAR accepted! Supplies updated.');
+    renderIAR();
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to accept IAR: ' + e.message);
+  }
+}
+
+function viewIAR(iarId) {
+  const iar = IARS.find(x => x._id === iarId);
+  if (!iar) return;
+  const itemRows = (iar.items || []).map((it, i) =>
+    '<tr><td>' + (i+1) + '</td><td>' + it.name + '</td><td>' + it.unit + '</td><td>' + it.qty + '</td><td>' + (it.unitCost ? '&#8369;' + Number(it.unitCost).toLocaleString('en-PH',{minimumFractionDigits:2}) : '—') + '</td></tr>'
+  ).join('');
+  const body = '<div style="margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">'
+    + '<div><strong>IAR No:</strong> ' + iar.iarNo + '</div>'
+    + '<div><strong>Supplier:</strong> ' + (iar.supplier||'—') + '</div>'
+    + '<div><strong>PO No:</strong> ' + (iar.poNo||'—') + '</div>'
+    + '<div><strong>Date:</strong> ' + (iar.date||'—') + '</div>'
+    + '<div><strong>Fund Cluster:</strong> ' + (iar.fund||'—') + '</div>'
+    + '<div><strong>Req. Office:</strong> ' + (iar.reqOffice||'—') + '</div>'
+    + '</div>'
+    + '<table style="width:100%;"><thead><tr><th>#</th><th>Description</th><th>Unit</th><th>Qty</th><th>Unit Cost</th></tr></thead>'
+    + '<tbody>' + itemRows + '</tbody></table>'
+    + '<div style="margin-top:16px;padding:12px;background:var(--gray-50);border-radius:8px;font-size:13px;">'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">'
+    + '<div><strong>Inspected by:</strong><br><span style="color:var(--gray-600);">Inspection Committee</span></div>'
+    + '<div><strong>Received by:</strong><br><span style="color:var(--gray-600);">MARILOU S. BUGATAN<br>AO I (Supply Officer I)</span></div>'
+    + '</div></div>';
+  document.getElementById('modal-ris-title').textContent = 'IAR — ' + iar.iarNo;
+  document.getElementById('modal-ris-body').innerHTML = body;
+  document.getElementById('modal-ris-footer').innerHTML = '<button class="btn btn-outline" onclick="closeModal(\'modal-ris\')">Close</button>';
+  document.getElementById('modal-ris').classList.add('open');
+}
+
 // ════════════════════════════════════════════════════════════
 // UTILS
 // ════════════════════════════════════════════════════════════
@@ -1031,4 +1344,10 @@ document.getElementById('modal-account').addEventListener('click', function(e) {
 });
 document.getElementById('modal-confirm-delete-account').addEventListener('click', function(e) {
   if (e.target === this) closeModal('modal-confirm-delete-account');
+});
+document.getElementById('modal-edit-ris').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-edit-ris');
+});
+document.getElementById('modal-iar').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-iar');
 });
