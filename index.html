@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DMW RO-CAR | Supply Procurement System</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=12">
+<link rel="stylesheet" href="styles.css?v=99">
 </head>
 <body>
 
@@ -538,7 +538,6 @@ const firebaseConfig = {
   appId: "1:33188895710:web:a52cb990f1d7d64914db4f",
   measurementId: "G-7FDQT79H2J"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db              = firebase.firestore();
 const collection      = (ref, path)     => db.collection(path);
@@ -556,6 +555,6 @@ function getCollection(name)     { return db.collection(name); }
 function getDocRef(colName, id)  { return db.collection(colName).doc(id); }
 </script>
 
-<script src="app.js?v=12"></script>
+<script src="app.js?v=99"></script>
 </body>
 </html>
