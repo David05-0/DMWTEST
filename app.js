@@ -791,6 +791,116 @@ function printRIS() {
   window.print();
 }
 
+
+// ════════════════════════════════════════════════════════════
+// PRINT IAR
+// ════════════════════════════════════════════════════════════
+let currentPrintIAR = null;
+
+function buildIARFormHTML(iar) {
+  const itemRows = (iar.items || []).map((it, i) => {
+    const cost  = it.unitCost > 0 ? it.unitCost : '';
+    const total = it.unitCost > 0 ? (Number(it.qty) * Number(it.unitCost)).toLocaleString('en-PH',{minimumFractionDigits:2}) : '';
+    return `<tr>
+      <td style="text-align:center;">${i+1}</td>
+      <td>${it.name}</td>
+      <td style="text-align:center;">${it.unit}</td>
+      <td style="text-align:center;">${it.qty}</td>
+      <td style="text-align:right;">${cost ? '&#8369;' + Number(cost).toLocaleString('en-PH',{minimumFractionDigits:2}) : ''}</td>
+      <td style="text-align:right;">${total ? '&#8369;' + total : ''}</td>
+    </tr>`;
+  }).join('');
+
+  const today = new Date().toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'});
+
+  return `<div class="ris-form" id="iar-form-content" style="font-family:Arial,sans-serif;font-size:11px;color:#000;max-width:720px;margin:0 auto;padding:12px;">
+    <div style="text-align:center;margin-bottom:2px;font-size:10px;">Republic of the Philippines</div>
+    <div style="text-align:center;margin-bottom:2px;font-size:10px;">Department of Migrant Workers</div>
+    <div style="text-align:center;font-weight:700;font-size:14px;margin-bottom:4px;">INSPECTION AND ACCEPTANCE REPORT</div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+      <div>Entity Name: <strong>DMW RO-CAR</strong></div>
+      <div>Fund Cluster: <span style="border-bottom:1px solid #000;min-width:120px;display:inline-block;">&nbsp;${iar.fund || ''}&nbsp;</span></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+      <div>Supplier: <span style="border-bottom:1px solid #000;min-width:200px;display:inline-block;">&nbsp;${iar.supplier || ''}&nbsp;</span></div>
+      <div>IAR No.: <strong>${iar.iarNo}</strong></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+      <div>PO No./Date: <span style="border-bottom:1px solid #000;min-width:180px;display:inline-block;">&nbsp;${iar.poNo || ''}&nbsp;</span></div>
+      <div>Date: <span style="border-bottom:1px solid #000;min-width:120px;display:inline-block;">&nbsp;${iar.date || ''}&nbsp;</span></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+      <div>Requisitioning Office/Dept.: <span style="border-bottom:1px solid #000;min-width:160px;display:inline-block;">&nbsp;${iar.reqOffice || ''}&nbsp;</span></div>
+      <div>Invoice No.: <span style="border-bottom:1px solid #000;min-width:120px;display:inline-block;">&nbsp;&nbsp;</span></div>
+    </div>
+    <div style="margin-bottom:8px;">
+      Responsibility Center Code: <span style="border-bottom:1px solid #000;min-width:160px;display:inline-block;">&nbsp;&nbsp;</span>
+      &nbsp;&nbsp;&nbsp;Date: <span style="border-bottom:1px solid #000;min-width:120px;display:inline-block;">&nbsp;&nbsp;</span>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:8px;">
+      <thead>
+        <tr style="background:#f0f0f0;">
+          <th style="border:1px solid #000;padding:4px 6px;width:32px;text-align:center;">Stock/<br>Prop No.</th>
+          <th style="border:1px solid #000;padding:4px 6px;">Description</th>
+          <th style="border:1px solid #000;padding:4px 6px;width:50px;text-align:center;">Unit</th>
+          <th style="border:1px solid #000;padding:4px 6px;width:55px;text-align:center;">Quantity</th>
+          <th style="border:1px solid #000;padding:4px 6px;width:80px;text-align:center;">Unit Cost</th>
+          <th style="border:1px solid #000;padding:4px 6px;width:90px;text-align:center;">Total Cost</th>
+        </tr>
+      </thead>
+      <tbody>${itemRows}</tbody>
+      <tr>
+        <td colspan="3" style="border:1px solid #000;padding:4px 6px;text-align:right;font-weight:bold;">TOTAL</td>
+        <td style="border:1px solid #000;padding:4px 6px;text-align:center;font-weight:bold;">${(iar.items||[]).reduce((s,i)=>s+Number(i.qty||0),0)}</td>
+        <td style="border:1px solid #000;"></td>
+        <td style="border:1px solid #000;padding:4px 6px;text-align:right;font-weight:bold;">&#8369;${(iar.items||[]).reduce((s,i)=>s+(Number(i.qty||0)*Number(i.unitCost||0)),0).toLocaleString('en-PH',{minimumFractionDigits:2})}</td>
+      </tr>
+    </table>
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:0;">
+      <tr>
+        <td style="border:1px solid #000;padding:8px;width:50%;vertical-align:top;">
+          <div style="font-weight:700;text-align:center;margin-bottom:6px;">INSPECTION</div>
+          <div style="margin-bottom:4px;">Date Inspected: <span style="border-bottom:1px solid #000;min-width:100px;display:inline-block;">&nbsp;${iar.date || ''}&nbsp;</span></div>
+          <div style="margin-bottom:16px;">Inspected, verified and found in order as to quantity and specifications.</div>
+          <div style="margin-bottom:24px;">&nbsp;</div>
+          <div style="border-top:1px solid #000;text-align:center;padding-top:4px;font-weight:700;">NAME OF EMPLOYEE</div>
+          <div style="text-align:center;font-size:10px;">Inspection Committee</div>
+        </td>
+        <td style="border:1px solid #000;padding:8px;width:50%;vertical-align:top;">
+          <div style="font-weight:700;text-align:center;margin-bottom:6px;">ACCEPTANCE</div>
+          <div style="margin-bottom:4px;">Date Received: <span style="border-bottom:1px solid #000;min-width:100px;display:inline-block;">&nbsp;${iar.date || ''}&nbsp;</span></div>
+          <div style="margin-bottom:4px;">&#9634; Complete &nbsp;&nbsp;&nbsp; &#9634; Partial (pls. specify quantity)</div>
+          <div style="margin-bottom:24px;">&nbsp;</div>
+          <div style="border-top:1px solid #000;text-align:center;padding-top:4px;font-weight:700;">MARILOU S. BUGATAN</div>
+          <div style="text-align:center;font-size:10px;">AO I (Supply Officer I)</div>
+        </td>
+      </tr>
+    </table>
+    <div style="font-size:10px;text-align:right;margin-top:4px;">DV / JEV / SO / IC</div>
+  </div>`;
+}
+
+function openPrintIAR(iarId) {
+  const iar = IARS.find(x => x._id === iarId);
+  if (!iar) return;
+  currentPrintIAR = iar;
+  document.getElementById('modal-print-ris-body').innerHTML = buildIARFormHTML(iar);
+  document.getElementById('modal-print-ris').querySelector('h3').textContent = 'Print IAR - ' + iar.iarNo;
+  // Swap print button to use printIAR
+  const footer = document.getElementById('modal-print-ris').querySelector('.modal-footer');
+  footer.innerHTML = '<button class="btn btn-outline" onclick="closeModal(\'modal-print-ris\')">Close</button>'
+    + '<button class="btn btn-primary" onclick="printIAR()">Print IAR</button>';
+  document.getElementById('modal-print-ris').classList.add('open');
+}
+
+function printIAR() {
+  if (!currentPrintIAR) return;
+  document.getElementById('print-ris-area').innerHTML = buildIARFormHTML(currentPrintIAR);
+  window.print();
+}
+
 // ════════════════════════════════════════════════════════════
 // NEW REQUEST FLOW
 // ════════════════════════════════════════════════════════════
@@ -1163,6 +1273,7 @@ function renderIAR() {
       + '<td>' + statusBadge + '</td>'
       + '<td>'
       + '<button class="btn btn-outline btn-sm" onclick="viewIAR(\'' + iar._id + '\')">View</button>'
+      + '<button class="btn btn-outline btn-sm" onclick="openPrintIAR(\'' + iar._id + '\')" style="margin-left:4px" title="Print IAR">&#128424;&#65039;</button>'
       + (!iar.accepted ? '<button class="btn btn-success btn-sm" onclick="acceptIAR(\'' + iar._id + '\')" style="margin-left:4px">Accept &amp; Add to Stock</button>' : '')
       + '</td>'
       + '</tr>';
