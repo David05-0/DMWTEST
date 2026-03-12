@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DMW RO-CAR | Supply Procurement System</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=99">
+<link rel="stylesheet" href="styles.css?v=100">
 </head>
 <body>
 
@@ -247,6 +247,35 @@
       </div>
     </div>
 
+
+    <!-- ADMIN: Supply Ledger -->
+    <div class="page" id="page-supply-ledger">
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h4>📅 Monthly Supply Ledger</h4>
+          <span style="font-size:12px;color:var(--gray-400);">Automatically tallied from Issued requests</span>
+        </div>
+        <div class="card-body" style="padding:16px;">
+          <div id="supply-ledger-wrap"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN: IAR -->
+    <div class="page" id="page-iar">
+      <div class="card">
+        <div class="card-header">
+          <h4>✅ Inspection & Acceptance Reports</h4>
+          <button class="btn btn-gold" onclick="openIARModal()">+ New IAR</button>
+        </div>
+        <div class="card-body" style="overflow-x:auto;">
+          <table style="width:100%;"><thead><tr>
+            <th>IAR No.</th><th>Supplier</th><th>PO No.</th><th>Date</th><th>Items</th><th>Status</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="iar-table"></tbody></table>
+        </div>
+      </div>
+    </div>
   </div><!-- end .main -->
 </div><!-- end #app -->
 
@@ -367,34 +396,6 @@
 </div>
 
 
-    <!-- ADMIN: Supply Ledger -->
-    <div class="page" id="page-supply-ledger">
-      <div class="card" style="margin-bottom:20px;">
-        <div class="card-header">
-          <h4>📅 Monthly Supply Ledger</h4>
-          <span style="font-size:12px;color:var(--gray-400);">Automatically tallied from Issued requests</span>
-        </div>
-        <div class="card-body" style="padding:16px;">
-          <div id="supply-ledger-wrap"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ADMIN: IAR -->
-    <div class="page" id="page-iar">
-      <div class="card">
-        <div class="card-header">
-          <h4>✅ Inspection & Acceptance Reports</h4>
-          <button class="btn btn-gold" onclick="openIARModal()">+ New IAR</button>
-        </div>
-        <div class="card-body" style="overflow-x:auto;">
-          <table style="width:100%;"><thead><tr>
-            <th>IAR No.</th><th>Supplier</th><th>PO No.</th><th>Date</th><th>Items</th><th>Status</th><th>Actions</th>
-          </tr></thead>
-          <tbody id="iar-table"></tbody></table>
-        </div>
-      </div>
-    </div>
 
 <!-- MODAL: Logout Confirm -->
 <div class="modal-overlay" id="modal-logout-confirm">
@@ -538,6 +539,7 @@ const firebaseConfig = {
   appId: "1:33188895710:web:a52cb990f1d7d64914db4f",
   measurementId: "G-7FDQT79H2J"
 };
+
 firebase.initializeApp(firebaseConfig);
 const db              = firebase.firestore();
 const collection      = (ref, path)     => db.collection(path);
@@ -555,6 +557,6 @@ function getCollection(name)     { return db.collection(name); }
 function getDocRef(colName, id)  { return db.collection(colName).doc(id); }
 </script>
 
-<script src="app.js?v=99"></script>
+<script src="app.js?v=100"></script>
 </body>
 </html>
