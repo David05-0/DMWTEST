@@ -1,561 +1,1353 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DMW RO-CAR | Supply Procurement System</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=100">
-</head>
-<body>
+// ════════════════════════════════════════════════════════════
+// FIREBASE — initialized in index.html via CDN, db exposed globally
+// ════════════════════════════════════════════════════════════
+// db, collection, doc, addDoc, updateDoc, onSnapshot,
+// query, orderBy, serverTimestamp are all set in index.html
 
-<!-- LOGIN SCREEN -->
-<div id="login-screen">
-  <div class="login-card">
-    <div class="login-logo">
-      <div class="badge">⚡ DMW RO-CAR</div>
-      <h1>Supply Procurement<br>& Request System</h1>
-      <p>Department of Migrant Workers – CAR Region</p>
-    </div>
-    <div class="role-tabs">
-      <div class="role-tab active" onclick="selectRole('admin')">🔐 Admin</div>
-      <div class="role-tab" onclick="selectRole('employee')">👤 Employee</div>
-    </div>
-    <div class="login-error" id="login-error">Invalid credentials. Please try again.</div>
-    <div class="form-group">
-      <label>Username</label>
-      <input type="text" id="login-user" placeholder="Enter username" />
-    </div>
-    <div class="form-group">
-      <label>Password</label>
-      <input type="password" id="login-pass" placeholder="Enter password" />
-    </div>
-    <button class="btn-login" onclick="doLogin()">Sign In →</button>
-    <div class="login-hint">
-      Admin: <span>admin / admin123</span> &nbsp;|&nbsp; Employee: <span>employee / emp123</span>
-    </div>
-  </div>
-</div>
+// ════════════════════════════════════════════════════════════
+// STATIC DATA
+// ════════════════════════════════════════════════════════════
+const SUPPLIES = [
+  { id:1,  name:'AIR FRESHENER',                                     unit:'can',    qty:40,  balance:null, note:'for utility use only' },
+  { id:2,  name:'ALCOHOL, Ethyl, 500ml',                             unit:'bottle', qty:30,  balance:null, note:'' },
+  { id:3,  name:'CLIP, Backfold, 50mm',                              unit:'box',    qty:10,  balance:8,    note:'' },
+  { id:4,  name:'CLIP, Backfold, 25mm',                              unit:'box',    qty:5,   balance:null, note:'' },
+  { id:5,  name:'CLIP, Backfold, 32mm',                              unit:'box',    qty:5,   balance:null, note:'' },
+  { id:6,  name:'FURNITURE CLEANER',                                 unit:'can',    qty:40,  balance:null, note:'' },
+  { id:7,  name:'HAND SANITIZER, 500mL',                             unit:'bottle', qty:40,  balance:null, note:'' },
+  { id:8,  name:'HAND SOAP, LIQUID, 500ml',                          unit:'bottle', qty:5,   balance:null, note:'' },
+  { id:9,  name:'MARKER, Permanent, Black',                          unit:'piece',  qty:12,  balance:null, note:'' },
+  { id:10, name:'RECORD BOOK, 300 pages',                            unit:'book',   qty:5,   balance:2,    note:'' },
+  { id:11, name:'TOILET TISSUE PAPER, 2 ply',                        unit:'pack',   qty:64,  balance:null, note:'' },
+  { id:12, name:'DISINFECTANT SPRAY, aerosol, 400g (min)',           unit:'can',    qty:10,  balance:null, note:'' },
+  { id:13, name:'STAPLE WIRE, heavy duty (binder type)',             unit:'box',    qty:10,  balance:null, note:'' },
+  { id:14, name:'Sign Pen, Extra Fine tip, black',                   unit:'pc',     qty:48,  balance:43,   note:'' },
+  { id:15, name:'Sign Pen, Extra Fine tip, blue',                    unit:'pc',     qty:48,  balance:43,   note:'' },
+  { id:16, name:'Heavy-Duty Latex Rubber Gloves, large',             unit:'pair',   qty:15,  balance:null, note:'for utility use' },
+  { id:17, name:'Empty Sacks, 50 kgs',                               unit:'pc',     qty:100, balance:null, note:'for records use' },
+  { id:18, name:'PAPER, multicopy, A4, 80gsm',                       unit:'ream',   qty:60,  balance:50,   note:'' },
+  { id:19, name:'BLEACH COLORSAFE, 1Liter',                          unit:'bottle', qty:10,  balance:null, note:'for utility use' },
+  { id:20, name:'Dishwashing Sponge Scouring Pad with Foam',         unit:'pc',     qty:20,  balance:null, note:'' },
+  { id:21, name:'Push Pins (Assorted Colors), 30pcs',                unit:'pack',   qty:10,  balance:null, note:'' },
+  { id:22, name:'Expandable Folder, long',                           unit:'pc',     qty:100, balance:null, note:'issued to records' },
+  { id:23, name:'Sign Here, stick on Notes Film Flag (25MM x 43MM)', unit:'pack',   qty:20,  balance:17,   note:'' },
+  { id:24, name:'Ballpen, retractable, 0.5mm, black/blue',           unit:'piece',  qty:24,  balance:null, note:'' },
+  { id:25, name:'BATTERY, dry cell, size AA, 2pc/pack',              unit:'pack',   qty:20,  balance:null, note:'' },
+  { id:26, name:'BATTERY, dry cell, size AAA, 2pc/pack',             unit:'pack',   qty:20,  balance:null, note:'' },
+  { id:27, name:'PAPER, multicopy, short, 80gsm',                    unit:'ream',   qty:10,  balance:null, note:'' },
+  { id:28, name:'Certificate Holder, A4',                            unit:'piece',  qty:11,  balance:null, note:'' },
+];
+SUPPLIES.forEach(s => { s.available = s.balance !== null ? s.balance : s.qty; s.unitCost = s.unitCost || 0; });
 
-<!-- MAIN APP -->
-<div id="app">
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <div class="sidebar-brand">
-      <div class="chip">DMW RO-CAR</div>
-      <h2>Procurement<br>System</h2>
-      <p>Supply Management Portal</p>
-    </div>
-    <nav class="sidebar-nav" id="sidebar-nav">
-      <!-- populated by JS -->
-    </nav>
-    <div class="sidebar-user">
-      <div class="user-avatar" id="user-avatar">A</div>
-      <div class="user-info">
-        <div class="name" id="user-name">Admin</div>
-        <div class="role" id="user-role-label">Administrator</div>
+// ════════════════════════════════════════════════════════════
+// APP STATE
+// ════════════════════════════════════════════════════════════
+let REQUESTS    = [];   // live mirror of Firestore
+let currentUser = null;
+let currentRole = null; // 'admin' | 'employee'
+let unsubscribe = null; // Firestore real-time listener handle
+
+// Admin credential is hardcoded (never stored in Firestore)
+const ADMIN_CREDENTIAL = { user:'admin', pass:'admin123', name:'Admin Officer', role:'Administrator' };
+
+// Employee accounts loaded from Firestore 'accounts' collection
+let ACCOUNTS = []; // { _id, username, password, name, division, role:'Employee' }
+let accountsUnsubscribe = null;
+
+
+
+function startAccountsListener() {
+  accountsUnsubscribe = db.collection('accounts').onSnapshot(snapshot => {
+    ACCOUNTS = snapshot.docs.map(d => ({ _id: d.id, ...d.data() }));
+    const active = document.querySelector('.page.active');
+    if (active && active.id === 'page-manage-accounts') renderManageAccounts();
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// FIRESTORE REAL-TIME LISTENER
+// ════════════════════════════════════════════════════════════
+function startListener() {
+  const q = db.collection('requests').orderBy('createdAt', 'asc');
+  unsubscribe = q.onSnapshot(snapshot => {
+    REQUESTS = snapshot.docs.map(d => ({ _id: d.id, ...d.data() }));
+    // Refresh whatever page is currently open
+    const active = document.querySelector('.page.active');
+    if (!active) return;
+    const id = active.id;
+    if (id === 'page-dashboard')   renderDashboard();
+    if (id === 'page-requests')    renderRequests();
+    if (id === 'page-my-requests') renderMyRequests();
+    updatePendingBadge();
+  }, err => {
+    console.error('Firestore error:', err);
+    showToast('⚠️ Database error. Check Firebase config or internet.');
+  });
+}
+
+function stopListener() {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+}
+
+// ════════════════════════════════════════════════════════════
+// LOGIN / LOGOUT
+// ════════════════════════════════════════════════════════════
+let selectedRole = 'admin';
+
+function selectRole(r) {
+  selectedRole = r;
+  document.querySelectorAll('.role-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && r === 'admin') || (i === 1 && r === 'employee'));
+  });
+}
+
+function doLogin() {
+  const u   = document.getElementById('login-user').value.trim();
+  const p   = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+
+  if (selectedRole === 'admin') {
+    // Admin: check hardcoded credential
+    if (u === ADMIN_CREDENTIAL.user && p === ADMIN_CREDENTIAL.pass) {
+      err.style.display = 'none';
+      currentUser = ADMIN_CREDENTIAL;
+      currentRole = 'admin';
+      launchApp();
+    } else {
+      err.style.display = 'block';
+    }
+  } else {
+    // Employee: check Firestore accounts (loaded at page load)
+    const found = ACCOUNTS.find(a => a.username === u && a.password === p);
+    if (found) {
+      err.style.display = 'none';
+      currentUser = { name: found.name, role: 'Employee', username: found.username, division: found.division || '' };
+      currentRole = 'employee';
+      launchApp();
+    } else {
+      // Fallback check — accounts may still be loading, query directly
+      db.collection('accounts').where('username','==',u).where('password','==',p).get().then(snap => {
+        if (!snap.empty) {
+          const data = snap.docs[0].data();
+          err.style.display = 'none';
+          currentUser = { name: data.name, role: 'Employee', username: data.username, division: data.division || '' };
+          currentRole = 'employee';
+          launchApp();
+        } else {
+          err.style.display = 'block';
+        }
+      }).catch(() => { err.style.display = 'block'; });
+    }
+  }
+}
+
+function launchApp() {
+  // Save session so page refresh restores login state
+  sessionStorage.setItem('dmw_session', JSON.stringify({ user: currentUser, role: currentRole }));
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  setupApp();
+  startListener();
+  startSuppliesListener();
+  startAccountsListener();
+  startIARListener();
+}
+
+// Restore session on page refresh
+(function restoreSession() {
+  const saved = sessionStorage.getItem('dmw_session');
+  if (!saved) return;
+  try {
+    const { user, role } = JSON.parse(saved);
+    if (!user || !role) return;
+    currentUser = user;
+    currentRole = role;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    setupApp();
+    startListener();
+    startSuppliesListener();
+    startAccountsListener();
+  startIARListener();
+  } catch(e) {
+    sessionStorage.removeItem('dmw_session');
+  }
+})();
+document.getElementById('login-pass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+function doLogout() {
+  document.getElementById('modal-logout-confirm').classList.add('open');
+}
+
+function confirmLogout() {
+  closeModal('modal-logout-confirm');
+  stopListener();
+  if (suppliesUnsubscribe)  { suppliesUnsubscribe();  suppliesUnsubscribe  = null; }
+  if (accountsUnsubscribe)  { accountsUnsubscribe();  accountsUnsubscribe  = null; }
+  ACCOUNTS = [];
+  sessionStorage.removeItem('dmw_session');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  currentUser = null;
+  currentRole = null;
+  REQUESTS    = [];
+}
+
+// ════════════════════════════════════════════════════════════
+// APP SETUP & NAVIGATION
+// ════════════════════════════════════════════════════════════
+function setupApp() {
+  document.getElementById('user-avatar').textContent     = currentUser.name[0];
+  document.getElementById('user-name').textContent       = currentUser.name;
+  document.getElementById('user-role-label').textContent = currentUser.role;
+
+  const nav = document.getElementById('sidebar-nav');
+  if (currentRole === 'admin') {
+    nav.innerHTML = `
+      <div class="nav-section-label">Management</div>
+      <div class="nav-item active" onclick="navigate('page-dashboard')"><span class="icon">📊</span> Dashboard</div>
+      <div class="nav-item" onclick="navigate('page-inventory')"><span class="icon">📦</span> Inventory</div>
+      <div class="nav-item" onclick="navigate('page-requests')">
+        <span class="icon">📋</span> All Requests
+        <span class="nav-badge" id="pending-badge" style="display:none">0</span>
       </div>
-      <button class="btn-logout" onclick="doLogout()" title="Logout">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-      </button>
-    </div>
-  </div>
+      <div class="nav-item" onclick="navigate('page-manage-supplies')"><span class="icon">🛠️</span> Manage Supplies</div>
+      <div class="nav-item" onclick="navigate('page-manage-accounts')"><span class="icon">👥</span> Manage Accounts</div>
+      <div class="nav-section-label">Reports</div>
+      <div class="nav-item" onclick="navigate('page-supply-ledger')"><span class="icon">📅</span> Supply Ledger</div>
+      <div class="nav-item" onclick="navigate('page-iar')"><span class="icon">✅</span> Acceptance Reports</div>`;
+  } else {
+    nav.innerHTML = `
+      <div class="nav-section-label">Requests</div>
+      <div class="nav-item active" onclick="navigate('page-new-request')"><span class="icon">➕</span> New Request</div>
+      <div class="nav-item" onclick="navigate('page-my-requests')"><span class="icon">📋</span> My Requests</div>
+      <div class="nav-section-label">Reference</div>
+      <div class="nav-item" onclick="navigate('page-inventory')"><span class="icon">📦</span> View Supplies</div>`;
+  }
+  navigate(currentRole === 'admin' ? 'page-dashboard' : 'page-new-request');
+}
 
-  <!-- Main -->
-  <div class="main">
-    <div class="topbar">
-      <h3 id="page-title">Dashboard</h3>
-      <div class="topbar-actions" id="topbar-actions"></div>
-    </div>
+function navigate(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.getAttribute('onclick')?.includes(pageId));
+  });
 
-    <!-- ADMIN PAGES -->
-    <div class="page active" id="page-dashboard">
-      <div class="stats-grid" id="dash-stats"></div>
-      <div class="card">
-        <div class="card-header">
-          <h4>📋 Recent Requests</h4>
-          <button class="btn btn-outline btn-sm" onclick="navigate('page-requests')">View All</button>
-        </div>
-        <div class="card-body table-wrap">
-          <table><thead><tr>
-            <th>RIS No.</th><th>Requestor</th><th>Division</th><th>Date</th><th>Items</th><th>Status</th>
-          </tr></thead>
-          <tbody id="dash-recent-table"></tbody></table>
-        </div>
-      </div>
-    </div>
+  const titles = {
+    'page-dashboard':        'Dashboard',
+    'page-inventory':        'Supply Inventory',
+    'page-requests':         'All RIS Requests',
+    'page-new-request':      'New Requisition & Issue Slip',
+    'page-my-requests':      'My Requests',
+    'page-manage-supplies':  'Manage Supplies',
+    'page-manage-accounts':  'Manage Employee Accounts',
+    'page-supply-ledger':    'Supply Ledger (Monthly)',
+    'page-iar':              'Inspection & Acceptance Reports',
+  };
+  document.getElementById('page-title').textContent = titles[pageId] || '';
+  document.getElementById('topbar-actions').innerHTML = '';
 
-    <div class="page" id="page-inventory">
-      <div class="card" style="margin-bottom:20px;">
-        <div class="card-header">
-          <h4>📦 Supply Inventory — As of January 20, 2026</h4>
-          <div class="search-bar"><input type="text" placeholder="Search supplies…" oninput="filterInventory(this.value)" /></div>
-        </div>
-        <div class="card-body table-wrap">
-          <table><thead><tr>
-            <th>Description</th><th>Unit</th><th>Original Qty</th><th>Balance</th><th>Available</th><th>Utilization</th><th>Note</th>
-          </tr></thead>
-          <tbody id="inventory-table"></tbody></table>
-        </div>
-      </div>
-    </div>
+  if (pageId === 'page-dashboard')        renderDashboard();
+  if (pageId === 'page-inventory')        renderInventory();
+  if (pageId === 'page-requests')         renderRequests();
+  if (pageId === 'page-my-requests')      renderMyRequests();
+  if (pageId === 'page-manage-supplies')  renderManageSupplies();
+  if (pageId === 'page-manage-accounts')  renderManageAccounts();
+  if (pageId === 'page-supply-ledger')    renderSupplyLedger();
+  if (pageId === 'page-iar')              renderIAR();
+  if (pageId === 'page-new-request') {
+    resetRequestForm();
+    document.getElementById('topbar-actions').innerHTML =
+      `<span style="font-size:13px;color:var(--gray-400);">Form Appendix 63 — RIS</span>`;
+  }
+}
 
-    <div class="page" id="page-requests">
-      <div class="card">
-        <div class="card-header">
-          <h4>📄 All RIS Requests</h4>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <select onchange="filterRequests(this.value)" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:'DM Sans';font-size:13px;outline:none;">
-              <option value="all">All Status</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Issued">Issued</option>
-            </select>
+// ════════════════════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════════════════════
+function renderDashboard() {
+  const pending    = REQUESTS.filter(r => r.status === 'Pending').length;
+  const approved   = REQUESTS.filter(r => r.status === 'Approved').length;
+  const issued     = REQUESTS.filter(r => r.status === 'Issued').length;
+  const totalUnits = SUPPLIES.reduce((s, i) => s + i.available, 0);
+
+  document.getElementById('dash-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Total Supply Items</div>
+      <div class="stat-value">${SUPPLIES.length}</div>
+      <div class="stat-sub">${totalUnits} total units available</div>
+    </div>
+    <div class="stat-card teal">
+      <div class="stat-label">Total Requests</div>
+      <div class="stat-value">${REQUESTS.length}</div>
+      <div class="stat-sub">All time submissions</div>
+    </div>
+    <div class="stat-card" style="border-left-color:#e8a020">
+      <div class="stat-label">Pending</div>
+      <div class="stat-value">${pending}</div>
+      <div class="stat-sub">Awaiting action</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Approved / Issued</div>
+      <div class="stat-value">${approved + issued}</div>
+      <div class="stat-sub">Processed requests</div>
+    </div>`;
+
+  const recent = [...REQUESTS].reverse().slice(0, 5);
+  const tb = document.getElementById('dash-recent-table');
+  tb.innerHTML = !recent.length
+    ? `<tr><td colspan="6"><div class="empty-state"><div class="icon">📭</div><p>No requests yet</p></div></td></tr>`
+    : recent.map(r => `
+        <tr>
+          <td><strong>${r.risNo}</strong></td>
+          <td>${r.name}</td>
+          <td>${r.division}</td>
+          <td>${r.date}</td>
+          <td>${r.items.length} item(s)</td>
+          <td><span class="badge badge-${r.status.toLowerCase()}">${r.status}</span></td>
+        </tr>`).join('');
+  updatePendingBadge();
+}
+
+function updatePendingBadge() {
+  const b = document.getElementById('pending-badge');
+  if (!b) return;
+  const n = REQUESTS.filter(r => r.status === 'Pending').length;
+  b.textContent   = n;
+  b.style.display = n ? 'inline-block' : 'none';
+}
+
+// ════════════════════════════════════════════════════════════
+// INVENTORY
+// ════════════════════════════════════════════════════════════
+let inventoryFilter = '';
+function renderInventory() {
+  const tb   = document.getElementById('inventory-table');
+  const data = SUPPLIES.filter(s => s.name.toLowerCase().includes(inventoryFilter.toLowerCase()));
+  tb.innerHTML = data.map(s => {
+    const pct      = Math.round((s.available / s.qty) * 100);
+    const cls      = pct < 30 ? 'low' : pct < 60 ? 'mid' : '';
+    const noteHtml = s.note ? `<span class="badge badge-util">${s.note}</span>` : '—';
+    return `
+      <tr>
+        <td><strong>${s.name}</strong></td>
+        <td>${s.unit}</td>
+        <td>${s.qty}</td>
+        <td>${s.balance !== null ? s.balance : '—'}</td>
+        <td><strong>${s.available}</strong></td>
+        <td>
+          <div style="min-width:80px;">
+            <div class="qty-bar"><div class="qty-fill ${cls}" style="width:${pct}%"></div></div>
+            <div style="font-size:11px;color:var(--gray-400);margin-top:2px">${pct}%</div>
           </div>
-        </div>
-        <div class="card-body table-wrap">
-          <table><thead><tr>
-            <th>RIS No.</th><th>Requestor</th><th>Designation</th><th>Division</th><th>Date</th><th>Items</th><th>Status</th><th>Actions</th>
-          </tr></thead>
-          <tbody id="requests-table"></tbody></table>
-        </div>
+        </td>
+        <td>${noteHtml}</td>
+      </tr>`;
+  }).join('');
+}
+
+function filterInventory(v) { inventoryFilter = v; renderInventory(); }
+
+// ════════════════════════════════════════════════════════════
+// MANAGE SUPPLIES — Admin CRUD
+// ════════════════════════════════════════════════════════════
+// SUPPLIES array is the live working list (starts from static data)
+// Admin can add/edit/delete — changes persist in Firestore 'supplies' collection
+// On startup, we merge Firestore supplies over the static defaults
+
+let suppliesUnsubscribe = null;
+
+function startSuppliesListener() {
+  suppliesUnsubscribe = db.collection('supplies').onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
+      const data = { ...change.doc.data(), _id: change.doc.id };
+      const idx  = SUPPLIES.findIndex(s => s._id === data._id);
+      if (change.type === 'added' || change.type === 'modified') {
+        data.available = data.balance !== null && data.balance !== undefined ? data.balance : data.qty;
+        if (idx >= 0) SUPPLIES[idx] = data;
+        else SUPPLIES.push(data);
+      }
+      if (change.type === 'removed') {
+        if (idx >= 0) SUPPLIES.splice(idx, 1);
+      }
+    });
+    // Re-render if on relevant pages
+    const active = document.querySelector('.page.active');
+    if (!active) return;
+    if (active.id === 'page-manage-supplies') renderManageSupplies();
+    if (active.id === 'page-inventory')       renderInventory();
+    if (active.id === 'page-new-request')     renderSupplyPicker();
+  });
+}
+
+let manageSuppliesFilter = '';
+function filterManageSupplies(v) { manageSuppliesFilter = v; renderManageSupplies(); }
+
+function renderManageSupplies() {
+  const tb   = document.getElementById('manage-supplies-table');
+  const data = SUPPLIES.filter(s => s.name.toLowerCase().includes(manageSuppliesFilter.toLowerCase()));
+  if (!data.length) {
+    tb.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">📦</div><p>No supplies found</p></div></td></tr>';
+    return;
+  }
+  let rows = '';
+  data.forEach(s => {
+    const sid      = s._id || String(s.id || '');
+    const bal      = (s.balance !== null && s.balance !== undefined) ? s.balance : '—';
+    const noteHtml = s.note ? '<span class="badge badge-util">' + s.note + '</span>' : '—';
+    rows += '<tr>'
+      + '<td style="min-width:200px;font-weight:600;color:var(--text);">' + s.name + '</td>'
+      + '<td>' + s.unit + '</td>'
+      + '<td>' + s.qty + '</td>'
+      + '<td>' + bal + '</td>'
+      + '<td><strong>' + s.available + '</strong></td>'
+      + '<td>' + noteHtml + '</td>'
+      + '<td>'
+      +   '<button class="btn btn-outline btn-sm" onclick="openSupplyModal(\'' + sid + '\')">&#9999;&#65039; Edit</button>'
+      +   '<button class="btn btn-danger btn-sm" onclick="deleteSupplyPrompt(\'' + sid + '\')" style="margin-left:4px">&#128465;&#65039; Delete</button>'
+      + '</td>'
+      + '</tr>';
+  });
+  tb.innerHTML = rows;
+}
+
+// Store supply name separately for delete prompt
+function deleteSupplyPrompt(id) {
+  const s = SUPPLIES.find(x => (x._id || String(x.id || '')) === id);
+  if (!s) return;
+  deleteSupplyId = id;
+  document.getElementById('delete-supply-name').textContent = s.name;
+  document.getElementById('modal-confirm-delete').classList.add('open');
+}
+
+let editingSupplyId = null;
+
+function openSupplyModal(supplyId) {
+  editingSupplyId = supplyId || null;
+  const modal = document.getElementById('modal-supply');
+  document.getElementById('modal-supply-title').textContent = supplyId ? '✏️ Edit Supply' : '➕ Add New Supply';
+
+  if (supplyId) {
+    const s = SUPPLIES.find(x => (x._id || String(x.id || '')) === supplyId);
+    if (!s) return;
+    document.getElementById('supply-name').value      = s.name;
+    document.getElementById('supply-unit').value      = s.unit;
+    document.getElementById('supply-qty').value       = s.qty;
+    document.getElementById('supply-balance').value   = s.balance !== null && s.balance !== undefined ? s.balance : '';
+    document.getElementById('supply-unit-cost').value = s.unitCost || '';
+    document.getElementById('supply-note').value      = s.note || '';
+  } else {
+    document.getElementById('supply-name').value      = '';
+    document.getElementById('supply-unit').value      = '';
+    document.getElementById('supply-qty').value       = '';
+    document.getElementById('supply-balance').value   = '';
+    document.getElementById('supply-unit-cost').value = '';
+    document.getElementById('supply-note').value      = '';
+  }
+  modal.classList.add('open');
+}
+
+async function saveSupply() {
+  const name    = document.getElementById('supply-name').value.trim();
+  const unit    = document.getElementById('supply-unit').value.trim();
+  const qty     = parseInt(document.getElementById('supply-qty').value) || 0;
+  const balRaw  = document.getElementById('supply-balance').value.trim();
+  const balance = balRaw !== '' ? parseInt(balRaw) : null;
+  const note    = document.getElementById('supply-note').value.trim();
+
+  if (!name || !unit) { showToast('Please fill in Name and Unit.'); return; }
+
+  const unitCostRaw = document.getElementById('supply-unit-cost').value.trim();
+  const unitCost    = unitCostRaw !== '' ? parseFloat(unitCostRaw) : 0;
+
+  const data = {
+    name, unit, qty,
+    balance: balance,
+    note,
+    unitCost,
+    available: balance !== null ? balance : qty,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+
+  const btn = document.querySelector('#modal-supply .btn-gold');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+
+  try {
+    if (editingSupplyId) {
+      const existing = SUPPLIES.find(x => (x._id || String(x.id || '')) === editingSupplyId);
+      if (existing && existing._id) {
+        // Firestore supply — update in DB
+        await db.collection('supplies').doc(existing._id).update(data);
+      } else {
+        // Static supply — save as new Firestore doc and update local array
+        data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        data.id = existing ? existing.id : Date.now();
+        const ref = await db.collection('supplies').add(data);
+        // Update the local static entry with the new _id
+        if (existing) {
+          Object.assign(existing, data);
+          existing._id = ref.id;
+        }
+        renderManageSupplies();
+      }
+      showToast('✅ Supply updated!');
+    } else {
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      data.id = Date.now();
+      await db.collection('supplies').add(data);
+      showToast('✅ Supply added!');
+    }
+    closeModal('modal-supply');
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to save. Check connection.');
+  } finally {
+    if (btn) { btn.textContent = 'Save Supply'; btn.disabled = false; }
+  }
+}
+
+let deleteSupplyId = null;
+
+async function confirmDeleteSupply() {
+  if (!deleteSupplyId) return;
+  try {
+    // Only delete from Firestore if it has a Firestore _id
+    const s = SUPPLIES.find(x => x._id === deleteSupplyId);
+    if (s && s._id) {
+      await db.collection('supplies').doc(s._id).delete();
+    } else {
+      // Static supply — just remove from local array
+      const idx = SUPPLIES.findIndex(x => String(x.id) === String(deleteSupplyId));
+      if (idx >= 0) SUPPLIES.splice(idx, 1);
+      renderManageSupplies();
+    }
+    showToast('🗑️ Supply deleted.');
+    closeModal('modal-confirm-delete');
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to delete.');
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// ALL REQUESTS — Admin
+// ════════════════════════════════════════════════════════════
+let reqFilter = 'all';
+function renderRequests() {
+  const tb   = document.getElementById('requests-table');
+  const data = reqFilter === 'all' ? REQUESTS : REQUESTS.filter(r => r.status === reqFilter);
+  if (!data.length) {
+    tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">📭</div><p>No requests found</p></div></td></tr>`;
+    return;
+  }
+  tb.innerHTML = [...data].reverse().map(r => `
+    <tr>
+      <td><strong>${r.risNo}</strong></td>
+      <td>${r.name}</td>
+      <td>${r.division}</td>
+      <td>${r.designation || r.office || ''}</td>
+      <td>${r.date}</td>
+      <td>${r.items.length} item(s)</td>
+      <td><span class="badge badge-${r.status.toLowerCase()}">${r.status}</span></td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="viewRIS('${r.risNo}',true)">View</button>
+        <button class="btn btn-outline btn-sm" onclick="openEditRIS('${r.risNo}')" style="margin-left:4px" title="Edit Items">✏️</button>
+        ${r.status === 'Pending' ? `
+          <button class="btn btn-success btn-sm" onclick="updateStatus('${r.risNo}','Approved')" style="margin-left:4px">✓</button>
+          <button class="btn btn-danger btn-sm"  onclick="updateStatus('${r.risNo}','Rejected')" style="margin-left:4px">✕</button>` : ''}
+        ${r.status === 'Approved' ? `
+          <button class="btn btn-primary btn-sm" onclick="updateStatus('${r.risNo}','Issued')" style="margin-left:4px">Issue</button>` : ''}
+        <button class="btn btn-outline btn-sm" onclick="openPrintRIS('${r.risNo}')" style="margin-left:4px" title="Print RIS">🖨️</button>
+      </td>
+    </tr>`).join('');
+  updatePendingBadge();
+}
+function filterRequests(v) { reqFilter = v; renderRequests(); }
+
+async function updateStatus(risNo, status) {
+  const req = REQUESTS.find(r => r.risNo === risNo);
+  if (!req || !req._id) return;
+  try {
+    await db.collection('requests').doc(req._id).update({ status });
+    showToast(`RIS ${risNo} marked as ${status}`);
+    closeModal('modal-ris');
+  } catch (e) {
+    console.error(e);
+    showToast('⚠️ Failed to update. Check your connection.');
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// MY REQUESTS — Employee
+// ════════════════════════════════════════════════════════════
+function renderMyRequests() {
+  const mine = REQUESTS.filter(r => r.user === currentUser.name);
+  const tb   = document.getElementById('my-requests-table');
+  if (!mine.length) {
+    tb.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">📭</div><p>You have no requests yet</p></div></td></tr>`;
+    return;
+  }
+  tb.innerHTML = [...mine].reverse().map(r => `
+    <tr>
+      <td><strong>${r.risNo}</strong></td>
+      <td>${r.date}</td>
+      <td>${r.division}</td>
+      <td>${r.items.length} item(s)</td>
+      <td><span class="badge badge-${r.status.toLowerCase()}">${r.status}</span></td>
+      <td><button class="btn btn-outline btn-sm" onclick="viewRIS('${r.risNo}',false)">View</button></td>
+    </tr>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// VIEW RIS MODAL
+// ════════════════════════════════════════════════════════════
+function viewRIS(risNo, isAdmin) {
+  const r = REQUESTS.find(x => x.risNo === risNo);
+  if (!r) return;
+
+  document.getElementById('modal-ris-title').textContent = `RIS — ${r.risNo}`;
+
+  const itemsHtml = r.items.map(i => {
+    const sup  = SUPPLIES.find(s => s.id === i.id);
+    const ok   = i.qty <= (sup ? sup.available : 0);
+    return `<tr>
+      <td>${i.name}</td><td>${i.unit}</td>
+      <td style="text-align:center">${i.qty}</td>
+      <td><span class="badge ${ok ? 'badge-approved' : 'badge-rejected'}">${ok ? 'Available' : 'Check Stock'}</span></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('modal-ris-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+      <div><div class="ris-detail-label">Entity Name</div><div class="ris-detail-value">DMW RO-CAR</div></div>
+      <div><div class="ris-detail-label">RIS No.</div><div class="ris-detail-value">${r.risNo}</div></div>
+      <div><div class="ris-detail-label">Division</div><div class="ris-detail-value">${r.division}</div></div>
+      <div><div class="ris-detail-label">Designation</div><div class="ris-detail-value">${r.designation || r.office || '—'}</div></div>
+      <div><div class="ris-detail-label">Requestor</div><div class="ris-detail-value">${r.name}</div></div>
+      <div><div class="ris-detail-label">Date Filed</div><div class="ris-detail-value">${r.date}</div></div>
+      <div><div class="ris-detail-label">Purpose</div><div class="ris-detail-value">${r.purpose || '—'}</div></div>
+      <div><div class="ris-detail-label">Status</div><div class="ris-detail-value"><span class="badge badge-${r.status.toLowerCase()}">${r.status}</span></div></div>
+    </div>
+    <h5 style="font-family:'Syne';font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">Requisitioned Items</h5>
+    <div class="table-wrap" style="border:1px solid var(--gray-100);border-radius:8px;overflow:hidden;">
+      <table>
+        <thead><tr><th>Description</th><th>Unit</th><th>Qty Requested</th><th>Stock Status</th></tr></thead>
+        <tbody>${itemsHtml}</tbody>
+      </table>
+    </div>`;
+
+  const footer = document.getElementById('modal-ris-footer');
+  if (isAdmin && r.status === 'Pending') {
+    footer.innerHTML = `
+      <button class="btn btn-outline btn-sm" onclick="openPrintRIS('${r.risNo}')">🖨️ Preview RIS</button>
+      <button class="btn btn-danger"  onclick="updateStatus('${r.risNo}','Rejected')">✕ Reject</button>
+      <button class="btn btn-success" onclick="updateStatus('${r.risNo}','Approved')">✓ Approve</button>`;
+  } else if (isAdmin && r.status === 'Approved') {
+    footer.innerHTML = `
+      <button class="btn btn-outline btn-sm" onclick="openPrintRIS('${r.risNo}')">🖨️ Preview RIS</button>
+      <button class="btn btn-primary" onclick="updateStatus('${r.risNo}','Issued')">Mark as Issued</button>`;
+  } else if (isAdmin) {
+    footer.innerHTML = `
+      <button class="btn btn-outline" onclick="closeModal('modal-ris')">Close</button>
+      <button class="btn btn-primary btn-sm" onclick="openPrintRIS('${r.risNo}')">🖨️ Print RIS</button>`;
+  } else {
+    footer.innerHTML = `<button class="btn btn-outline" onclick="closeModal('modal-ris')">Close</button>`;
+  }
+
+  document.getElementById('modal-ris').classList.add('open');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ════════════════════════════════════════════════════════════
+// PRINT RIS — Official Appendix 63
+// ════════════════════════════════════════════════════════════
+let currentPrintRIS = null;
+
+function buildRISFormHTML(r) {
+  const BLANK_ROWS = 15;
+  const rows = [...r.items];
+  while (rows.length < BLANK_ROWS) rows.push(null);
+
+  const supplyMap = {};
+  SUPPLIES.forEach(s => { supplyMap[s.id] = s; });
+
+  const rowsHtml = rows.map((item, idx) => {
+    if (!item) return `<tr><td style="height:22px;">&nbsp;</td><td></td><td class="desc"></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+    const sup      = supplyMap[item.id];
+    const avail    = sup ? sup.available : 0;
+    const stockYes = item.qty <= avail ? '✓' : '';
+    const stockNo  = item.qty >  avail ? '✓' : '';
+    const issued   = (r.status === 'Issued' || r.status === 'Approved') ? item.qty : '';
+    return `<tr>
+      <td style="height:22px;">${idx + 1}</td>
+      <td>${item.unit}</td>
+      <td class="desc">${item.name}</td>
+      <td>${item.qty}</td>
+      <td>${stockYes}</td>
+      <td>${stockNo}</td>
+      <td>${issued}</td>
+      <td></td>
+    </tr>`;
+  }).join('');
+
+  return `
+  <div class="ris-form" id="ris-form-content">
+    <div class="ris-top-notes">3 copies<br>1 for Accountant (RSMI)<br>1 for Requisitioning Unit<br>1 for Supply Officer</div>
+    <div class="ris-appendix"><em>Appendix 63</em></div>
+    <div class="ris-title">REQUISITION AND ISSUE SLIP</div>
+    <div class="ris-header-row">
+      <div>Entity Name : <strong>DMW RO-CAR</strong></div>
+      <div>Fund Cluster : <span style="min-width:180px;display:inline-block;border-bottom:1px solid #000;">&nbsp;</span></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+      <div>Division : <span class="ris-sig-line" style="min-width:140px;">${r.division}</span></div>
+      <div>Responsibility Center Code : <span class="ris-sig-line" style="min-width:140px;">&nbsp;</span></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+      <div>Designation : <span class="ris-sig-line" style="min-width:160px;">${r.designation || r.office || ''}</span></div>
+      <div>RIS No. : <span class="ris-sig-line" style="min-width:140px;font-weight:bold;">${r.risNo}</span></div>
+    </div>
+    <table class="ris-main-table">
+      <thead>
+        <tr>
+          <th colspan="4" class="group-header">Requisition</th>
+          <th colspan="2" class="group-header">Stock Available?</th>
+          <th colspan="2" class="group-header">Issue</th>
+        </tr>
+        <tr>
+          <th class="subheader" style="width:36px;">Stock No.</th>
+          <th class="subheader" style="width:52px;">Unit</th>
+          <th class="subheader" style="min-width:180px;">Description</th>
+          <th class="subheader" style="width:56px;">Quantity</th>
+          <th class="subheader" style="width:36px;">Yes</th>
+          <th class="subheader" style="width:36px;">No</th>
+          <th class="subheader" style="width:56px;">Quantity</th>
+          <th class="subheader" style="width:90px;">Remarks</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    <div class="ris-purpose-row">
+      Purpose : <span class="ris-sig-line" style="min-width:500px;">${r.purpose || ''}</span>
+    </div>
+    <div style="border-bottom:1px solid #ccc;margin:4px 0;"></div>
+    <table class="ris-sig-table">
+      <thead>
+        <tr>
+          <th style="width:25%">Requested by:</th>
+          <th style="width:25%">Approved by:</th>
+          <th style="width:25%">Issued by:</th>
+          <th style="width:25%">Received by:</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="height:36px;">Signature :</td>
+          <td>Signature :</td>
+          <td>Signature :</td>
+          <td>Signature :</td>
+        </tr>
+        <tr>
+          <td>Printed Name :<br><span class="sig-name">${r.name}</span></td>
+          <td>Printed Name :<br><span class="sig-name">ANNA THERESA T. GAWIDAN</span></td>
+          <td>Printed Name :<br><span class="sig-name">MARILOU S. BUGATAN</span></td>
+          <td>Printed Name :<br>&nbsp;</td>
+        </tr>
+        <tr>
+          <td class="sig-desig">Designation : <span style="font-weight:600;color:#000;">${r.designation || r.office || ''}</span></td>
+          <td class="sig-desig">Chief AO, FAD</td>
+          <td class="sig-desig">AO I, FAD</td>
+          <td class="sig-desig">Designation :</td>
+        </tr>
+        <tr>
+          <td>Date : <span class="ris-sig-line">${r.date}</span></td>
+          <td>Date : <span class="ris-sig-line">${r.status === 'Approved' || r.status === 'Issued' ? r.date : ''}</span></td>
+          <td>Date : <span class="ris-sig-line">${r.status === 'Issued' ? r.date : ''}</span></td>
+          <td>Date : <span class="ris-sig-line"></span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="ris-footer-note">RSMI / SO / RU</div>
+  </div>`;
+}
+
+function openPrintRIS(risNo) {
+  const r = REQUESTS.find(x => x.risNo === risNo);
+  if (!r) return;
+  currentPrintRIS = r;
+  document.getElementById('modal-print-ris-body').innerHTML = buildRISFormHTML(r);
+  document.getElementById('modal-print-ris').classList.add('open');
+}
+
+function printRIS() {
+  if (!currentPrintRIS) return;
+  document.getElementById('print-ris-area').innerHTML = buildRISFormHTML(currentPrintRIS);
+  window.print();
+}
+
+// ════════════════════════════════════════════════════════════
+// NEW REQUEST FLOW
+// ════════════════════════════════════════════════════════════
+let cart = {};
+
+function resetRequestForm() {
+  document.getElementById('req-step1').style.display = 'block';
+  document.getElementById('req-step2').style.display = 'none';
+  ['req-division','req-designation','req-name','req-purpose'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  cart = {};
+}
+
+function goToStep2() {
+  const div  = document.getElementById('req-division').value.trim();
+  const name = document.getElementById('req-name').value.trim();
+  if (!div || !name) { showToast('Please fill in Division and Requestor Name.'); return; }
+  document.getElementById('req-step1').style.display = 'none';
+  document.getElementById('req-step2').style.display = 'block';
+  renderSupplyPicker();
+  renderCart();
+}
+
+function backToStep1() {
+  document.getElementById('req-step1').style.display = 'block';
+  document.getElementById('req-step2').style.display = 'none';
+}
+
+let supplyFilter = '';
+function renderSupplyPicker() {
+  const grid = document.getElementById('supply-picker');
+  const data = SUPPLIES.filter(s => s.name.toLowerCase().includes(supplyFilter.toLowerCase()));
+  grid.innerHTML = data.map(s => {
+    const inCart = cart[s.id];
+    return `
+      <div class="supply-item${inCart ? ' selected' : ''}${s.available === 0 ? ' out-of-stock' : ''}"
+           onclick="toggleSupply(${s.id})" id="si-${s.id}">
+        <div class="supply-added-check">✓</div>
+        <div class="supply-name">${s.name}</div>
+        <div class="supply-unit">${s.unit}${s.note ? `<span class="note-tag">${s.note}</span>` : ''}</div>
+        <div class="supply-qty">${s.available} <span style="font-size:12px;font-weight:400;color:var(--gray-400)">avail.</span></div>
+      </div>`;
+  }).join('');
+}
+function filterSupplyPicker(v) { supplyFilter = v; renderSupplyPicker(); }
+
+function toggleSupply(id) {
+  const s = SUPPLIES.find(x => x.id === id);
+  if (!s || s.available === 0) return;
+  if (cart[id]) { delete cart[id]; }
+  else { cart[id] = { id, name: s.name, unit: s.unit, qty: 1, max: s.available }; }
+  renderSupplyPicker();
+  renderCart();
+}
+
+function renderCart() {
+  const el    = document.getElementById('cart-items');
+  const items = Object.values(cart);
+  if (!items.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">🛒</div><p>No items added</p></div>`;
+    return;
+  }
+  el.innerHTML = items.map(i => `
+    <div class="cart-row">
+      <div style="flex:1">
+        <div class="cart-name">${i.name}</div>
+        <div class="cart-unit">${i.unit}</div>
       </div>
-    </div>
-
-    <!-- EMPLOYEE PAGES -->
-    <div class="page" id="page-new-request">
-      <!-- Step 1: Info -->
-      <div id="req-step1">
-        <div class="card" style="margin-bottom:20px;">
-          <div class="card-header"><h4>📝 Step 1 — Request Details</h4></div>
-          <div class="form-grid">
-            <div class="field">
-              <label>Division</label>
-              <select id="req-division" style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:10px;font-family:'DM Sans';font-size:14px;color:var(--text);background:var(--white);outline:none;">
-              <option value="">-- Select Division --</option>
-              <option value="Migrant Workers Processing Division">Migrant Workers Processing Division</option>
-              <option value="Migrant Workers Protection Division">Migrant Workers Protection Division</option>
-              <option value="Migrant Workers Welfare and Reintegration Services Division">Migrant Workers Welfare and Reintegration Services Division</option>
-              <option value="Finance and Administration Division">Finance and Administration Division</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Designation</label>
-              <input type="text" id="req-designation" placeholder="e.g., Administrative Officer" />
-            </div>
-            <div class="field">
-              <label>Requestor Name</label>
-              <input type="text" id="req-name" placeholder="Your full name" />
-            </div>
-            <div class="field">
-              <label>Purpose / Remarks</label>
-              <input type="text" id="req-purpose" placeholder="Purpose of request" />
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-gold" onclick="goToStep2()">Next: Select Supplies →</button>
-          </div>
-        </div>
+      <div class="cart-qty">
+        <input type="number" min="1" max="${i.max}" value="${i.qty}" onchange="updateCartQty(${i.id},this.value)" />
       </div>
+      <button class="cart-remove" onclick="removeFromCart(${i.id})">✕</button>
+    </div>`).join('');
+}
 
-      <!-- Step 2: Select supplies -->
-      <div id="req-step2" style="display:none;">
-        <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;">
-          <div class="card">
-            <div class="card-header">
-              <h4>📦 Step 2 — Select Supplies</h4>
-              <div class="search-bar"><input type="text" placeholder="Search…" oninput="filterSupplyPicker(this.value)" /></div>
-            </div>
-            <div class="supply-grid" id="supply-picker"></div>
-          </div>
-          <div>
-            <div class="card" style="position:sticky;top:20px;">
-              <div class="card-header"><h4>🛒 Cart</h4></div>
-              <div id="cart-items">
-                <div class="empty-state"><div class="icon">🛒</div><p>No items added yet</p></div>
-              </div>
-              <div style="padding:16px 16px 0;">
-                <button class="btn btn-gold" style="width:100%" onclick="submitRequest()">Submit Request</button>
-                <button class="btn btn-outline" style="width:100%;margin-top:8px" onclick="backToStep1()">← Back</button>
-              </div>
-              <div style="height:16px;"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+function updateCartQty(id, val) {
+  if (!cart[id]) return;
+  cart[id].qty = Math.max(1, Math.min(parseInt(val) || 1, cart[id].max));
+}
 
-    <div class="page" id="page-my-requests">
-      <div class="card">
-        <div class="card-header">
-          <h4>📋 My Requests</h4>
-        </div>
-        <div class="card-body table-wrap">
-          <table><thead><tr>
-            <th>RIS No.</th><th>Date</th><th>Division</th><th>Items</th><th>Status</th><th>Actions</th>
-          </tr></thead>
-          <tbody id="my-requests-table"></tbody></table>
-        </div>
-      </div>
-    </div>
+function removeFromCart(id) {
+  delete cart[id];
+  renderSupplyPicker();
+  renderCart();
+}
 
+async function submitRequest() {
+  const items = Object.values(cart);
+  if (!items.length) { showToast('Please add at least one item.'); return; }
 
-    <!-- ADMIN: Manage Supplies -->
-    <div class="page" id="page-manage-supplies">
-      <div class="card" style="margin-bottom:20px;">
-        <div class="card-header">
-          <h4>📦 Manage Supplies</h4>
-          <div style="display:flex;gap:10px;align-items:center;">
-            <div class="search-bar"><input type="text" placeholder="Search supplies…" oninput="filterManageSupplies(this.value)" /></div>
-            <button class="btn btn-gold" onclick="openSupplyModal()">+ Add New Supply</button>
-          </div>
-        </div>
-        <div class="card-body" style="overflow-x:auto;">
-          <table style="width:100%;min-width:700px;"><thead><tr>
-            <th style="min-width:220px;">Description</th>
-            <th style="width:80px;">Unit</th>
-            <th style="width:100px;">Original Qty</th>
-            <th style="width:80px;">Balance</th>
-            <th style="width:90px;">Available</th>
-            <th style="width:110px;">Unit Cost</th>
-            <th style="min-width:140px;">Note</th>
-            <th style="width:160px;">Actions</th>
-          </tr></thead>
-          <tbody id="manage-supplies-table"></tbody></table>
-        </div>
-      </div>
-    </div>
+  const count = REQUESTS.length + 1;
+  const risNo = `RIS-2026-${String(count).padStart(4, '0')}`;
+  const today = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'short', day:'numeric' });
 
-    <!-- ADMIN: Manage Accounts -->
-    <div class="page" id="page-manage-accounts">
-      <div class="card">
-        <div class="card-header">
-          <h4>👥 Employee Accounts</h4>
-          <button class="btn btn-gold" onclick="openAccountModal()">+ Add Account</button>
-        </div>
-        <div class="card-body table-wrap">
-          <table><thead><tr>
-            <th>Full Name</th><th>Username</th><th>Division</th><th>Role</th><th>Actions</th>
-          </tr></thead>
-          <tbody id="manage-accounts-table"></tbody></table>
-        </div>
-      </div>
-    </div>
+  const req = {
+    risNo,
+    user:      currentUser.name,
+    name:      document.getElementById('req-name').value.trim(),
+    division:  document.getElementById('req-division').value.trim(),
+    designation: document.getElementById('req-designation').value.trim(),
+    purpose:   document.getElementById('req-purpose').value.trim(),
+    date:      today,
+    items:     items.map(i => ({ id: i.id, name: i.name, unit: i.unit, qty: i.qty })),
+    status:    'Pending',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
 
+  const btn = document.querySelector('#req-step2 .btn-gold');
+  if (btn) { btn.textContent = 'Submitting…'; btn.disabled = true; }
 
-    <!-- ADMIN: Supply Ledger -->
-    <div class="page" id="page-supply-ledger">
-      <div class="card" style="margin-bottom:20px;">
-        <div class="card-header">
-          <h4>📅 Monthly Supply Ledger</h4>
-          <span style="font-size:12px;color:var(--gray-400);">Automatically tallied from Issued requests</span>
-        </div>
-        <div class="card-body" style="padding:16px;">
-          <div id="supply-ledger-wrap"></div>
-        </div>
-      </div>
-    </div>
+  try {
+    await db.collection('requests').add(req);
+    showToast(`✅ ${risNo} submitted successfully!`);
+    resetRequestForm();
+    navigate('page-my-requests');
+  } catch (e) {
+    console.error(e);
+    showToast('⚠️ Submit failed. Check Firebase config or internet connection.');
+  } finally {
+    if (btn) { btn.textContent = 'Submit Request'; btn.disabled = false; }
+  }
+}
 
-    <!-- ADMIN: IAR -->
-    <div class="page" id="page-iar">
-      <div class="card">
-        <div class="card-header">
-          <h4>✅ Inspection & Acceptance Reports</h4>
-          <button class="btn btn-gold" onclick="openIARModal()">+ New IAR</button>
-        </div>
-        <div class="card-body" style="overflow-x:auto;">
-          <table style="width:100%;"><thead><tr>
-            <th>IAR No.</th><th>Supplier</th><th>PO No.</th><th>Date</th><th>Items</th><th>Status</th><th>Actions</th>
-          </tr></thead>
-          <tbody id="iar-table"></tbody></table>
-        </div>
-      </div>
-    </div>
-  </div><!-- end .main -->
-</div><!-- end #app -->
+// ════════════════════════════════════════════════════════════
+// MANAGE ACCOUNTS — Admin CRUD
+// ════════════════════════════════════════════════════════════
+function renderManageAccounts() {
+  const tb = document.getElementById('manage-accounts-table');
+  if (!ACCOUNTS.length) {
+    tb.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">👥</div><p>No employee accounts yet. Click "Add Account" to create one.</p></div></td></tr>`;
+    return;
+  }
+  tb.innerHTML = ACCOUNTS.map(a => `
+    <tr>
+      <td><strong>${a.name}</strong></td>
+      <td>${a.username}</td>
+      <td>${a.division || '—'}</td>
+      <td><span class="badge badge-issued">Employee</span></td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="openAccountModal('${a._id}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAccountPrompt('${a._id}','${a.name.replace(/'/g,"\'")}') " style="margin-left:4px">🗑️ Delete</button>
+      </td>
+    </tr>`).join('');
+}
 
-<!-- MODAL: Add/Edit Account -->
-<div class="modal-overlay" id="modal-account">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="modal-account-title">Add Employee Account</h3>
-      <button class="modal-close" onclick="closeModal('modal-account')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="field" style="grid-column:1/-1">
-          <label>Full Name</label>
-          <input type="text" id="acct-name" placeholder="e.g., Juan Dela Cruz" />
-        </div>
-        <div class="field">
-          <label>Username</label>
-          <input type="text" id="acct-username" placeholder="e.g., jdelacruz" autocomplete="off" />
-        </div>
-        <div class="field">
-          <label>Password</label>
-          <input type="text" id="acct-password" placeholder="Set a password" autocomplete="off" />
-        </div>
-        <div class="field" style="grid-column:1/-1">
-          <label>Division</label>
-<select id="acct-division" style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:10px;font-family:'DM Sans';font-size:14px;color:var(--text);background:var(--white);outline:none;">
-              <option value="">-- Select Division --</option>
-              <option value="Migrant Workers Processing Division">Migrant Workers Processing Division</option>
-              <option value="Migrant Workers Protection Division">Migrant Workers Protection Division</option>
-              <option value="Migrant Workers Welfare and Reintegration Services Division">Migrant Workers Welfare and Reintegration Services Division</option>
-              <option value="Finance and Administration Division">Finance and Administration Division</option>
-          </select>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-account')">Cancel</button>
-      <button class="btn btn-gold" onclick="saveAccount()">Save Account</button>
-    </div>
-  </div>
-</div>
+let editingAccountId = null;
 
-<!-- MODAL: Confirm Delete Account -->
-<div class="modal-overlay" id="modal-confirm-delete-account">
-  <div class="modal" style="max-width:400px;">
-    <div class="modal-header">
-      <h3>⚠️ Delete Account</h3>
-      <button class="modal-close" onclick="closeModal('modal-confirm-delete-account')">✕</button>
-    </div>
-    <div class="modal-body">
-      <p style="font-size:14px;color:var(--text);">Are you sure you want to delete the account for <strong id="delete-account-name"></strong>? This cannot be undone.</p>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-confirm-delete-account')">Cancel</button>
-      <button class="btn btn-danger" onclick="confirmDeleteAccount()">Delete</button>
-    </div>
-  </div>
-</div>
+function openAccountModal(accountId) {
+  editingAccountId = accountId || null;
+  document.getElementById('modal-account-title').textContent = accountId ? '✏️ Edit Account' : '➕ Add Employee Account';
+  if (accountId) {
+    const a = ACCOUNTS.find(x => x._id === accountId);
+    if (!a) return;
+    document.getElementById('acct-name').value     = a.name;
+    document.getElementById('acct-username').value = a.username;
+    document.getElementById('acct-password').value = a.password;
+    document.getElementById('acct-division').value = a.division || '';
+  } else {
+    document.getElementById('acct-name').value     = '';
+    document.getElementById('acct-username').value = '';
+    document.getElementById('acct-password').value = '';
+    document.getElementById('acct-division').value = '';
+  }
+  document.getElementById('modal-account').classList.add('open');
+}
 
-<!-- MODAL: Add/Edit Supply -->
-<div class="modal-overlay" id="modal-supply">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="modal-supply-title">Add New Supply</h3>
-      <button class="modal-close" onclick="closeModal('modal-supply')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="field" style="grid-column:1/-1">
-          <label>Description / Name</label>
-          <input type="text" id="supply-name" placeholder="e.g., BOND PAPER, A4, 80gsm" />
-        </div>
-        <div class="field">
-          <label>Unit</label>
-          <input type="text" id="supply-unit" placeholder="e.g., ream, box, piece" />
-        </div>
-        <div class="field">
-          <label>Quantity</label>
-          <input type="number" id="supply-qty" placeholder="e.g., 50" min="0" />
-        </div>
-        <div class="field">
-          <label>Balance <span style="font-weight:400;color:var(--gray-400)">(leave blank if same as qty)</span></label>
-          <input type="number" id="supply-balance" placeholder="optional" min="0" />
-        </div>
-        <div class="field">
-          <label>Unit Cost ₱ <span style="font-weight:400;color:var(--gray-400)">(optional)</span></label>
-          <input type="number" id="supply-unit-cost" placeholder="e.g., 125.00" min="0" step="0.01" />
-        </div>
-        <div class="field">
-          <label>Note <span style="font-weight:400;color:var(--gray-400)">(optional)</span></label>
-          <input type="text" id="supply-note" placeholder="e.g., for utility use only" />
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-supply')">Cancel</button>
-      <button class="btn btn-gold" onclick="saveSupply()">Save Supply</button>
-    </div>
-  </div>
-</div>
+async function saveAccount() {
+  const name     = document.getElementById('acct-name').value.trim();
+  const username = document.getElementById('acct-username').value.trim();
+  const password = document.getElementById('acct-password').value.trim();
+  const division = document.getElementById('acct-division').value.trim();
 
-<!-- MODAL: Confirm Delete -->
-<div class="modal-overlay" id="modal-confirm-delete">
-  <div class="modal" style="max-width:400px;">
-    <div class="modal-header">
-      <h3>⚠️ Delete Supply</h3>
-      <button class="modal-close" onclick="closeModal('modal-confirm-delete')">✕</button>
-    </div>
-    <div class="modal-body">
-      <p style="font-size:14px;color:var(--text);">Are you sure you want to delete <strong id="delete-supply-name"></strong>? This cannot be undone.</p>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-confirm-delete')">Cancel</button>
-      <button class="btn btn-danger" onclick="confirmDeleteSupply()">Delete</button>
-    </div>
-  </div>
-</div>
+  if (!name || !username || !password) {
+    showToast('Please fill in Name, Username, and Password.');
+    return;
+  }
+
+  // Check duplicate username (skip self when editing)
+  const duplicate = ACCOUNTS.find(a => a.username === username && a._id !== editingAccountId);
+  if (duplicate) { showToast('⚠️ Username already exists. Choose another.'); return; }
+
+  const data = { name, username, password, division, role: 'Employee' };
+  const btn  = document.querySelector('#modal-account .btn-gold');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+
+  try {
+    if (editingAccountId) {
+      await db.collection('accounts').doc(editingAccountId).update(data);
+      showToast('✅ Account updated!');
+    } else {
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('accounts').add(data);
+      showToast('✅ Account created!');
+    }
+    closeModal('modal-account');
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to save account. Check connection.');
+  } finally {
+    if (btn) { btn.textContent = 'Save Account'; btn.disabled = false; }
+  }
+}
+
+let deleteAccountId = null;
+function deleteAccountPrompt(id, name) {
+  deleteAccountId = id;
+  document.getElementById('delete-account-name').textContent = name;
+  document.getElementById('modal-confirm-delete-account').classList.add('open');
+}
+
+async function confirmDeleteAccount() {
+  if (!deleteAccountId) return;
+  try {
+    await db.collection('accounts').doc(deleteAccountId).delete();
+    showToast('🗑️ Account deleted.');
+    closeModal('modal-confirm-delete-account');
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to delete account.');
+  }
+}
 
 
+// ════════════════════════════════════════════════════════════
+// SUPPLY LEDGER — Monthly balance tracking
+// ════════════════════════════════════════════════════════════
+function renderSupplyLedger() {
+  const wrap = document.getElementById('supply-ledger-wrap');
+  if (!wrap) return;
 
-<!-- MODAL: Logout Confirm -->
-<div class="modal-overlay" id="modal-logout-confirm">
-  <div class="modal" style="max-width:380px;">
-    <div class="modal-header">
-      <h3>⏻ Log Out</h3>
-      <button class="modal-close" onclick="closeModal('modal-logout-confirm')">✕</button>
-    </div>
-    <div class="modal-body" style="padding:20px 24px;">
-      <p style="font-size:14px;color:var(--text);line-height:1.6;">Are you sure you want to log out of the <strong>DMW RO-CAR Procurement System</strong>?</p>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-logout-confirm')">Cancel</button>
-      <button class="btn btn-danger" onclick="confirmLogout()">Yes, Log Out</button>
-    </div>
-  </div>
-</div>
+  // Build monthly totals from Issued requests
+  const issued = REQUESTS.filter(r => r.status === 'Issued');
+  const months = {};
+  issued.forEach(r => {
+    const d = new Date(r.date || r.createdAt?.toDate?.() || Date.now());
+    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    const label = d.toLocaleString('en-PH',{month:'long', year:'numeric'});
+    if (!months[key]) months[key] = { label, items: {} };
+    (r.items || []).forEach(it => {
+      if (!months[key].items[it.name]) months[key].items[it.name] = { unit: it.unit, qty: 0 };
+      months[key].items[it.name].qty += Number(it.qty) || 0;
+    });
+  });
 
-<!-- MODAL: Edit RIS Items -->
-<div class="modal-overlay" id="modal-edit-ris">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="edit-ris-title">Edit Request Items</h3>
-      <button class="modal-close" onclick="closeModal('modal-edit-ris')">✕</button>
-    </div>
-    <div class="modal-body">
-      <p style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">Edit the items in this employee request. Changes are saved to Firestore.</p>
-      <div id="edit-ris-items"></div>
-      <button class="btn btn-outline btn-sm" onclick="addEditRISItem()" style="margin-top:8px;width:100%;">+ Add Item</button>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-edit-ris')">Cancel</button>
-      <button class="btn btn-gold" onclick="saveEditRIS()">Save Changes</button>
-    </div>
-  </div>
-</div>
+  const sortedKeys = Object.keys(months).sort();
+  if (!sortedKeys.length) {
+    wrap.innerHTML = '<div class="empty-state"><div class="icon">📅</div><p>No issued requests yet. Issued requests will appear here as monthly totals.</p></div>';
+    return;
+  }
 
-<!-- MODAL: New IAR -->
-<div class="modal-overlay" id="modal-iar">
-  <div class="modal modal-wide">
-    <div class="modal-header">
-      <h3>📋 New Inspection & Acceptance Report</h3>
-      <button class="modal-close" onclick="closeModal('modal-iar')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid" style="margin-bottom:16px;">
-        <div class="field">
-          <label>IAR No.</label>
-          <input type="text" id="iar-no" placeholder="IAR-XXXXXX" />
-        </div>
-        <div class="field">
-          <label>Date</label>
-          <input type="date" id="iar-date" />
-        </div>
-        <div class="field">
-          <label>Supplier</label>
-          <input type="text" id="iar-supplier" placeholder="Supplier name" />
-        </div>
-        <div class="field">
-          <label>PO No. / Date</label>
-          <input type="text" id="iar-po" placeholder="e.g., PO-2025-001" />
-        </div>
-        <div class="field">
-          <label>Fund Cluster</label>
-          <input type="text" id="iar-fund" placeholder="e.g., 01" />
-        </div>
-        <div class="field">
-          <label>Requisitioning Office/Dept.</label>
-          <input type="text" id="iar-req-office" placeholder="e.g., Finance and Administration Division" />
-        </div>
-      </div>
-      <div style="margin-bottom:8px;">
-        <div style="display:grid;grid-template-columns:1fr 80px 80px 110px 36px;gap:8px;font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">
-          <span>Description</span><span style="text-align:center;">Unit</span><span style="text-align:center;">Qty</span><span style="text-align:right;">Unit Cost (₱)</span><span></span>
-        </div>
-        <div id="iar-items-wrap"></div>
-        <button class="btn btn-outline btn-sm" onclick="addIARItem()" style="width:100%;margin-top:8px;">+ Add Item</button>
-      </div>
-      <div style="padding:12px;background:var(--gray-50);border-radius:8px;font-size:12px;color:var(--gray-600);">
-        <strong>Inspected by:</strong> Inspection Committee &nbsp;|&nbsp; <strong>Received by:</strong> MARILOU S. BUGATAN — AO I (Supply Officer I)
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-iar')">Cancel</button>
-      <button class="btn btn-gold" onclick="saveIAR()">Save IAR</button>
-    </div>
-  </div>
-</div>
+  wrap.innerHTML = sortedKeys.map(key => {
+    const m = months[key];
+    const rows = Object.entries(m.items).map(([name, v]) =>
+      '<tr><td>' + name + '</td><td>' + v.unit + '</td><td><strong>' + v.qty + '</strong></td></tr>'
+    ).join('');
+    return '<div class="card" style="margin-bottom:20px;">'
+      + '<div class="card-header"><h4>📅 ' + m.label + '</h4>'
+      + '<span style="font-size:12px;color:var(--gray-400);">' + Object.keys(m.items).length + ' supply types issued</span></div>'
+      + '<div class="card-body" style="overflow-x:auto;">'
+      + '<table style="width:100%;"><thead><tr><th>Supply Description</th><th>Unit</th><th>Total Qty Issued</th></tr></thead>'
+      + '<tbody>' + rows + '</tbody></table></div></div>';
+  }).join('');
+}
 
-<!-- MODAL: RIS Detail -->
-<div class="modal-overlay" id="modal-ris">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="modal-ris-title">RIS Details</h3>
-      <button class="modal-close" onclick="closeModal('modal-ris')">✕</button>
-    </div>
-    <div class="modal-body" id="modal-ris-body"></div>
-    <div class="modal-footer" id="modal-ris-footer"></div>
-  </div>
-</div>
+// ════════════════════════════════════════════════════════════
+// EDIT RIS ITEMS — Admin edits employee requisitioned supplies
+// ════════════════════════════════════════════════════════════
+let editingRISNo = null;
+let editRISItems = [];
 
-<!-- MODAL: Print RIS Preview -->
-<div class="modal-overlay" id="modal-print-ris">
-  <div class="modal modal-wide">
-    <div class="modal-header">
-      <h3>Print RIS - Official Form</h3>
-      <button class="modal-close" onclick="closeModal('modal-print-ris')">&#10005;</button>
-    </div>
-    <div class="modal-body" id="modal-print-ris-body" style="padding:16px 20px;"></div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-print-ris')">Close</button>
-      <button class="btn btn-primary" onclick="printRIS()">Print RIS</button>
-    </div>
-  </div>
-</div>
-<div id="print-ris-area"></div>
+function openEditRIS(risNo) {
+  const r = REQUESTS.find(x => x.risNo === risNo);
+  if (!r) return;
+  editingRISNo = risNo;
+  editRISItems = r.items.map(i => ({ ...i }));
 
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
+  document.getElementById('edit-ris-title').textContent = 'Edit Items — ' + risNo;
+  renderEditRISItems();
+  document.getElementById('modal-edit-ris').classList.add('open');
+}
 
-<!-- ═══════════════════════════════════════════════════ -->
-<!-- FIREBASE CDN — do NOT change these script src URLs -->
-<!-- ═══════════════════════════════════════════════════ -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+function renderEditRISItems() {
+  const wrap = document.getElementById('edit-ris-items');
+  if (!editRISItems.length) {
+    wrap.innerHTML = '<p style="color:var(--gray-400);text-align:center;padding:20px;">No items</p>';
+    return;
+  }
+  wrap.innerHTML = editRISItems.map((it, idx) => {
+    const opts = SUPPLIES.map(s =>
+      '<option value="' + s.name + '" ' + (s.name === it.name ? 'selected' : '') + '>' + s.name + '</option>'
+    ).join('');
+    return '<div style="display:grid;grid-template-columns:1fr 80px 80px 36px;gap:8px;align-items:center;margin-bottom:8px;">'
+      + '<select onchange="editRISItemField(' + idx + ',\'name\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:\'DM Sans\';">' + opts + '</select>'
+      + '<input type="text" value="' + it.unit + '" onchange="editRISItemField(' + idx + ',\'unit\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
+      + '<input type="number" value="' + it.qty + '" min="1" onchange="editRISItemField(' + idx + ',\'qty\',parseInt(this.value)||1)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
+      + '<button onclick="removeEditRISItem(' + idx + ')" style="background:var(--red);color:white;border:none;border-radius:8px;cursor:pointer;font-size:16px;height:36px;width:36px;">&#10005;</button>'
+      + '</div>';
+  }).join('');
+}
 
-<script>
-// ═══════════════════════════════════════════════════════
-// 🔧 PASTE YOUR FIREBASE CONFIG HERE
-//    Get it from: Firebase Console → Your Project →
-//    Project Settings → Your Apps → SDK setup & config
-// ═══════════════════════════════════════════════════════
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCc9aLE5H21xD5seVditEn0vMNPCNqVIWc",
-  authDomain: "dmwtest.firebaseapp.com",
-  databaseURL: "https://dmwtest-default-rtdb.firebaseio.com",
-  projectId: "dmwtest",
-  storageBucket: "dmwtest.firebasestorage.app",
-  messagingSenderId: "33188895710",
-  appId: "1:33188895710:web:a52cb990f1d7d64914db4f",
-  measurementId: "G-7FDQT79H2J"
-};
-firebase.initializeApp(firebaseConfig);
-const db              = firebase.firestore();
-const collection      = (ref, path)     => db.collection(path);
-const doc             = (ref, path, id) => db.collection(path).doc(id);
-const addDoc          = (ref, data)     => ref.add(data);
-const updateDoc       = (ref, data)     => ref.update(data);
-const serverTimestamp = ()              => firebase.firestore.FieldValue.serverTimestamp();
+function editRISItemField(idx, field, value) {
+  editRISItems[idx][field] = value;
+  if (field === 'name') {
+    const s = SUPPLIES.find(x => x.name === value);
+    if (s) editRISItems[idx].unit = s.unit;
+    renderEditRISItems();
+  }
+}
 
-function onSnapshot(q, cb, errCb) { return q.onSnapshot(cb, errCb); }
-function query(col)               { return col.orderBy('createdAt', 'asc'); }
-function orderBy()                { return null; } // handled inside query()
+function addEditRISItem() {
+  const s = SUPPLIES[0];
+  editRISItems.push({ id: s.id || s._id, name: s.name, unit: s.unit, qty: 1 });
+  renderEditRISItems();
+}
 
-// Wrap collection/doc for Firestore compat API
-function getCollection(name)     { return db.collection(name); }
-function getDocRef(colName, id)  { return db.collection(colName).doc(id); }
-</script>
+function removeEditRISItem(idx) {
+  editRISItems.splice(idx, 1);
+  renderEditRISItems();
+}
 
-<script src="app.js?v=100"></script>
-</body>
-</html>
+async function saveEditRIS() {
+  if (!editingRISNo || !editRISItems.length) { showToast('Add at least one item.'); return; }
+  const btn = document.querySelector('#modal-edit-ris .btn-gold');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+  try {
+    const snap = await db.collection('requests').where('risNo','==',editingRISNo).get();
+    if (snap.empty) { showToast('Request not found.'); return; }
+    await snap.docs[0].ref.update({ items: editRISItems });
+    showToast('✅ Items updated!');
+    closeModal('modal-edit-ris');
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to save.');
+  } finally {
+    if (btn) { btn.textContent = 'Save Changes'; btn.disabled = false; }
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// IAR — Inspection & Acceptance Report
+// ════════════════════════════════════════════════════════════
+let IARS = [];
+function startIARListener() {
+  db.collection('iars').orderBy('createdAt','asc').onSnapshot(snap => {
+    IARS = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    const active = document.querySelector('.page.active');
+    if (active && active.id === 'page-iar') renderIAR();
+  }, () => {});
+}
+
+function renderIAR() {
+  const tb = document.getElementById('iar-table');
+  if (!tb) return;
+  if (!IARS.length) {
+    tb.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">📋</div><p>No acceptance reports yet. Click "+ New IAR" to create one.</p></div></td></tr>';
+    return;
+  }
+  tb.innerHTML = [...IARS].reverse().map(iar => {
+    const statusBadge = iar.accepted
+      ? '<span class="badge badge-issued">Accepted</span>'
+      : '<span class="badge badge-pending">Pending</span>';
+    const total = (iar.items || []).reduce((s, i) => s + (Number(i.qty) || 0), 0);
+    return '<tr>'
+      + '<td><strong>' + iar.iarNo + '</strong></td>'
+      + '<td>' + (iar.supplier || '—') + '</td>'
+      + '<td>' + (iar.poNo || '—') + '</td>'
+      + '<td>' + (iar.date || '—') + '</td>'
+      + '<td>' + total + ' item(s)</td>'
+      + '<td>' + statusBadge + '</td>'
+      + '<td>'
+      + '<button class="btn btn-outline btn-sm" onclick="viewIAR(\'' + iar._id + '\')">View</button>'
+      + (!iar.accepted ? '<button class="btn btn-success btn-sm" onclick="acceptIAR(\'' + iar._id + '\')" style="margin-left:4px">Accept &amp; Add to Stock</button>' : '')
+      + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function openIARModal() {
+  document.getElementById('iar-no').value  = 'IAR-' + Date.now().toString().slice(-6);
+  document.getElementById('iar-supplier').value = '';
+  document.getElementById('iar-po').value  = '';
+  document.getElementById('iar-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('iar-fund').value = '';
+  document.getElementById('iar-req-office').value = '';
+  iarItems = [{ name: SUPPLIES[0].name, unit: SUPPLIES[0].unit, qty: 1, unitCost: 0 }];
+  renderIARItems();
+  document.getElementById('modal-iar').classList.add('open');
+}
+
+let iarItems = [];
+function renderIARItems() {
+  const wrap = document.getElementById('iar-items-wrap');
+  wrap.innerHTML = iarItems.map((it, idx) => {
+    const opts = SUPPLIES.map(s =>
+      '<option value="' + s.name + '" ' + (s.name === it.name ? 'selected' : '') + '>' + s.name + '</option>'
+    ).join('');
+    return '<div style="display:grid;grid-template-columns:1fr 80px 80px 110px 36px;gap:8px;align-items:center;margin-bottom:8px;">'
+      + '<select onchange="iarItemField(' + idx + ',\'name\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:\'DM Sans\';">' + opts + '</select>'
+      + '<input type="text" value="' + it.unit + '" placeholder="Unit" onchange="iarItemField(' + idx + ',\'unit\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
+      + '<input type="number" value="' + it.qty + '" min="1" placeholder="Qty" onchange="iarItemField(' + idx + ',\'qty\',parseInt(this.value)||1)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
+      + '<input type="number" value="' + (it.unitCost||0) + '" min="0" step="0.01" placeholder="Unit Cost" onchange="iarItemField(' + idx + ',\'unitCost\',parseFloat(this.value)||0)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:right;" />'
+      + '<button onclick="removeIARItem(' + idx + ')" style="background:var(--red);color:white;border:none;border-radius:8px;cursor:pointer;font-size:16px;height:36px;width:36px;">&#10005;</button>'
+      + '</div>';
+  }).join('');
+}
+
+function iarItemField(idx, field, value) {
+  iarItems[idx][field] = value;
+  if (field === 'name') {
+    const s = SUPPLIES.find(x => x.name === value);
+    if (s) { iarItems[idx].unit = s.unit; iarItems[idx].unitCost = s.unitCost || 0; }
+    renderIARItems();
+  }
+}
+
+function addIARItem() {
+  const s = SUPPLIES[0];
+  iarItems.push({ name: s.name, unit: s.unit, qty: 1, unitCost: s.unitCost || 0 });
+  renderIARItems();
+}
+
+function removeIARItem(idx) {
+  iarItems.splice(idx, 1);
+  renderIARItems();
+}
+
+async function saveIAR() {
+  const iarNo  = document.getElementById('iar-no').value.trim();
+  const supplier = document.getElementById('iar-supplier').value.trim();
+  const poNo   = document.getElementById('iar-po').value.trim();
+  const date   = document.getElementById('iar-date').value;
+  const fund   = document.getElementById('iar-fund').value.trim();
+  const reqOff = document.getElementById('iar-req-office').value.trim();
+
+  if (!supplier || !date || !iarItems.length) { showToast('Fill in Supplier, Date, and add at least one item.'); return; }
+  const btn = document.querySelector('#modal-iar .btn-gold');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+  try {
+    await db.collection('iars').add({
+      iarNo, supplier, poNo, date, fund, reqOffice: reqOff,
+      items: iarItems, accepted: false,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('✅ IAR saved!');
+    closeModal('modal-iar');
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to save IAR.');
+  } finally {
+    if (btn) { btn.textContent = 'Save IAR'; btn.disabled = false; }
+  }
+}
+
+async function acceptIAR(iarId) {
+  const iar = IARS.find(x => x._id === iarId);
+  if (!iar) return;
+  if (!confirm('Accept this IAR and add all items to supply inventory?')) return;
+  try {
+    // Add quantities to SUPPLIES in Firestore
+    for (const it of (iar.items || [])) {
+      const existing = SUPPLIES.find(s => s.name.toLowerCase() === it.name.toLowerCase());
+      if (existing) {
+        const newQty  = (existing.qty || 0) + (Number(it.qty) || 0);
+        const newBal  = (existing.available || 0) + (Number(it.qty) || 0);
+        const newData = { qty: newQty, balance: newBal, available: newBal, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+        if (it.unitCost > 0) newData.unitCost = it.unitCost;
+        if (existing._id) {
+          await db.collection('supplies').doc(existing._id).update(newData);
+        } else {
+          const ref = await db.collection('supplies').add({ ...existing, ...newData, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+          existing._id = ref.id;
+        }
+        Object.assign(existing, newData);
+      } else {
+        // New supply from IAR
+        const newSupply = { name: it.name, unit: it.unit, qty: Number(it.qty), balance: Number(it.qty), available: Number(it.qty), unitCost: it.unitCost || 0, note: '', createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+        const ref = await db.collection('supplies').add(newSupply);
+        SUPPLIES.push({ ...newSupply, _id: ref.id });
+      }
+    }
+    // Mark IAR as accepted
+    await db.collection('iars').doc(iarId).update({ accepted: true, acceptedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    showToast('✅ IAR accepted! Supplies updated.');
+    renderIAR();
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to accept IAR: ' + e.message);
+  }
+}
+
+function viewIAR(iarId) {
+  const iar = IARS.find(x => x._id === iarId);
+  if (!iar) return;
+  const itemRows = (iar.items || []).map((it, i) =>
+    '<tr><td>' + (i+1) + '</td><td>' + it.name + '</td><td>' + it.unit + '</td><td>' + it.qty + '</td><td>' + (it.unitCost ? '&#8369;' + Number(it.unitCost).toLocaleString('en-PH',{minimumFractionDigits:2}) : '—') + '</td></tr>'
+  ).join('');
+  const body = '<div style="margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">'
+    + '<div><strong>IAR No:</strong> ' + iar.iarNo + '</div>'
+    + '<div><strong>Supplier:</strong> ' + (iar.supplier||'—') + '</div>'
+    + '<div><strong>PO No:</strong> ' + (iar.poNo||'—') + '</div>'
+    + '<div><strong>Date:</strong> ' + (iar.date||'—') + '</div>'
+    + '<div><strong>Fund Cluster:</strong> ' + (iar.fund||'—') + '</div>'
+    + '<div><strong>Req. Office:</strong> ' + (iar.reqOffice||'—') + '</div>'
+    + '</div>'
+    + '<table style="width:100%;"><thead><tr><th>#</th><th>Description</th><th>Unit</th><th>Qty</th><th>Unit Cost</th></tr></thead>'
+    + '<tbody>' + itemRows + '</tbody></table>'
+    + '<div style="margin-top:16px;padding:12px;background:var(--gray-50);border-radius:8px;font-size:13px;">'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">'
+    + '<div><strong>Inspected by:</strong><br><span style="color:var(--gray-600);">Inspection Committee</span></div>'
+    + '<div><strong>Received by:</strong><br><span style="color:var(--gray-600);">MARILOU S. BUGATAN<br>AO I (Supply Officer I)</span></div>'
+    + '</div></div>';
+  document.getElementById('modal-ris-title').textContent = 'IAR — ' + iar.iarNo;
+  document.getElementById('modal-ris-body').innerHTML = body;
+  document.getElementById('modal-ris-footer').innerHTML = '<button class="btn btn-outline" onclick="closeModal(\'modal-ris\')">Close</button>';
+  document.getElementById('modal-ris').classList.add('open');
+}
+
+// ════════════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// Pre-load employee accounts so login works without waiting
+db.collection('accounts').get().then(snap => {
+  ACCOUNTS = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+}).catch(() => {});
+
+document.getElementById('modal-logout-confirm').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-logout-confirm');
+});
+document.getElementById('modal-ris').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-ris');
+});
+document.getElementById('modal-print-ris').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-print-ris');
+});
+document.getElementById('modal-supply').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-supply');
+});
+document.getElementById('modal-confirm-delete').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-confirm-delete');
+});
+document.getElementById('modal-account').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-account');
+});
+document.getElementById('modal-confirm-delete-account').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-confirm-delete-account');
+});
+document.getElementById('modal-edit-ris').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-edit-ris');
+});
+document.getElementById('modal-iar').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-iar');
+});
