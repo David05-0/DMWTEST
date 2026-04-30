@@ -376,6 +376,92 @@
   </div>
 </div>
 
+<!-- MODAL: Confirm Delete Request -->
+<div class="modal-overlay" id="modal-confirm-delete-request">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <h3>⚠️ Delete Request</h3>
+      <button class="modal-close" onclick="closeModal('modal-confirm-delete-request')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px;color:var(--text);">Are you sure you want to permanently delete request <strong id="delete-request-risno"></strong>? This action <strong>cannot be undone</strong>.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-confirm-delete-request')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDeleteRequest()">🗑️ Delete Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Confirm Delete IAR -->
+<div class="modal-overlay" id="modal-confirm-delete-iar">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <h3>⚠️ Delete Acceptance Report</h3>
+      <button class="modal-close" onclick="closeModal('modal-confirm-delete-iar')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px;color:var(--text);">Are you sure you want to permanently delete <strong id="delete-iar-no"></strong>? This action <strong>cannot be undone</strong>.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-confirm-delete-iar')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDeleteIAR()">🗑️ Delete IAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Edit IAR -->
+<div class="modal-overlay" id="modal-edit-iar">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h3>✏️ Edit Inspection & Acceptance Report</h3>
+      <button class="modal-close" onclick="closeModal('modal-edit-iar')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:16px;">
+        <div class="field">
+          <label>IAR No.</label>
+          <input type="text" id="edit-iar-no" placeholder="IAR-XXXXXX" />
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="edit-iar-date" />
+        </div>
+        <div class="field">
+          <label>Supplier</label>
+          <input type="text" id="edit-iar-supplier" placeholder="Supplier name" />
+        </div>
+        <div class="field">
+          <label>PO No. / Date</label>
+          <input type="text" id="edit-iar-po" placeholder="e.g., PO-2025-001" />
+        </div>
+        <div class="field">
+          <label>Fund Cluster</label>
+          <input type="text" id="edit-iar-fund" placeholder="e.g., 01" />
+        </div>
+        <div class="field">
+          <label>Requisitioning Office/Dept.</label>
+          <input type="text" id="edit-iar-req-office" placeholder="e.g., Finance and Administration Division" />
+        </div>
+      </div>
+      <div style="margin-bottom:8px;">
+        <div style="display:grid;grid-template-columns:1fr 80px 80px 110px 36px;gap:8px;font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">
+          <span>Description</span><span style="text-align:center;">Unit</span><span style="text-align:center;">Qty</span><span style="text-align:right;">Unit Cost (₱)</span><span></span>
+        </div>
+        <div id="edit-iar-items-wrap"></div>
+        <button class="btn btn-outline btn-sm" onclick="addEditIARItem()" style="width:100%;margin-top:8px;">+ Add Item</button>
+      </div>
+      <div style="padding:12px;background:var(--gray-50);border-radius:8px;font-size:12px;color:var(--gray-600);">
+        <strong>Inspected by:</strong> Inspection Committee &nbsp;|&nbsp; <strong>Received by:</strong> MARILOU S. BUGATAN — AO I (Supply Officer I)
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-edit-iar')">Cancel</button>
+      <button class="btn btn-gold" onclick="saveEditIAR()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Confirm Delete -->
 <div class="modal-overlay" id="modal-confirm-delete">
   <div class="modal" style="max-width:400px;">
