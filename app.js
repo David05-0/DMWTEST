@@ -902,21 +902,33 @@ function buildIARFormHTML(iar) {
     <!-- Inspection / Acceptance -->
     <table style="width:100%;border-collapse:collapse;border-top:none;">
       <tr>
-        <td style="${TD}width:50%;vertical-align:top;border-top:none;">
-          <div style="font-weight:700;text-align:center;margin-bottom:5px;">INSPECTION</div>
-          <div style="margin-bottom:4px;">Date Inspected:&nbsp;<span style="${UL}110px;">&nbsp;${iar.date||''}&nbsp;</span></div>
-          <div style="margin-bottom:18px;line-height:1.5;">Inspected, verified and found in order as to quantity<br>and specifications.</div>
-          <div style="height:30px;"></div>
-          <div style="border-top:1px solid #000;text-align:center;padding-top:3px;font-weight:700;font-size:11px;">NAME OF EMPLOYEE</div>
-          <div style="text-align:center;font-size:10px;">Inspection Committee</div>
+        <td style="${TD}width:50%;vertical-align:top;border-top:none;padding:0;">
+          <div style="display:flex;flex-direction:column;height:100%;min-height:120px;padding:8px;">
+            <div>
+              <div style="font-weight:700;text-align:center;margin-bottom:5px;">INSPECTION</div>
+              <div style="margin-bottom:4px;">Date Inspected:&nbsp;<span style="${UL}110px;">&nbsp;${iar.date||''}&nbsp;</span></div>
+              <div style="margin-bottom:8px;line-height:1.5;">Inspected, verified and found in order as to quantity<br>and specifications.</div>
+            </div>
+            <div style="flex:1;"></div>
+            <div>
+              <div style="border-top:1px solid #000;text-align:center;padding-top:3px;font-weight:700;font-size:11px;">NAME OF EMPLOYEE</div>
+              <div style="text-align:center;font-size:10px;">Inspection Committee</div>
+            </div>
+          </div>
         </td>
-        <td style="${TD}width:50%;vertical-align:top;border-top:none;">
-          <div style="font-weight:700;text-align:center;margin-bottom:5px;">ACCEPTANCE</div>
-          <div style="margin-bottom:4px;">Date Received:&nbsp;<span style="${UL}110px;">&nbsp;${iar.date||''}&nbsp;</span></div>
-          <div style="margin-bottom:4px;">&#9633; Complete &nbsp;&nbsp;&nbsp; &#9633; Partial (pls. specify quantity)</div>
-          <div style="height:44px;"></div>
-          <div style="border-top:1px solid #000;text-align:center;padding-top:3px;font-weight:700;font-size:11px;">MARILOU S. BUGATAN</div>
-          <div style="text-align:center;font-size:10px;">AO I (Supply Officer I)</div>
+        <td style="${TD}width:50%;vertical-align:top;border-top:none;padding:0;">
+          <div style="display:flex;flex-direction:column;height:100%;min-height:120px;padding:8px;">
+            <div>
+              <div style="font-weight:700;text-align:center;margin-bottom:5px;">ACCEPTANCE</div>
+              <div style="margin-bottom:4px;">Date Received:&nbsp;<span style="${UL}110px;">&nbsp;${iar.date||''}&nbsp;</span></div>
+              <div style="margin-bottom:8px;">&#9633; Complete &nbsp;&nbsp;&nbsp; &#9633; Partial (pls. specify quantity)</div>
+            </div>
+            <div style="flex:1;"></div>
+            <div>
+              <div style="border-top:1px solid #000;text-align:center;padding-top:3px;font-weight:700;font-size:11px;">MARILOU S. BUGATAN</div>
+              <div style="text-align:center;font-size:10px;">AO I (Supply Officer I)</div>
+            </div>
+          </div>
         </td>
       </tr>
     </table>
