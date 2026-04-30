@@ -1291,7 +1291,10 @@ function startIARListener() {
     IARS = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
     const active = document.querySelector('.page.active');
     if (active && active.id === 'page-iar') renderIAR();
-  }, () => {});
+  }, err => {
+    console.error('IAR listener error:', err);
+    showToast('⚠️ Could not load Acceptance Reports. Check connection.');
+  });
 }
 
 function renderIAR() {
@@ -1385,11 +1388,15 @@ async function saveIAR() {
   const btn = document.querySelector('#modal-iar .btn-gold');
   if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
   try {
-    await db.collection('iars').add({
+    const ref = await db.collection('iars').add({
       iarNo, supplier, poNo, date, fund, reqOffice: reqOff,
       items: iarItems, accepted: false,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    // Immediately add to local IARS so it shows without waiting for snapshot
+    const newIAR = { _id: ref.id, iarNo, supplier, poNo, date, fund, reqOffice: reqOff, items: iarItems, accepted: false };
+    if (!IARS.find(x => x._id === ref.id)) IARS.push(newIAR);
+    renderIAR();
     showToast('✅ IAR saved!');
     closeModal('modal-iar');
   } catch(e) {
