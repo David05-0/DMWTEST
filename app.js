@@ -824,87 +824,103 @@ function printRIS() {
 let currentPrintIAR = null;
 
 function buildIARFormHTML(iar) {
+  const TD  = 'border:1px solid #000;padding:4px 6px;';
+  const UL  = 'border-bottom:1px solid #000;display:inline-block;min-width:';
+
   const itemRows = (iar.items || []).map((it, i) => {
-    const cost  = it.unitCost > 0 ? it.unitCost : '';
+    const cost  = it.unitCost > 0 ? Number(it.unitCost).toLocaleString('en-PH',{minimumFractionDigits:2}) : '';
     const total = it.unitCost > 0 ? (Number(it.qty) * Number(it.unitCost)).toLocaleString('en-PH',{minimumFractionDigits:2}) : '';
     return `<tr>
-      <td style="text-align:center;">${i+1}</td>
-      <td>${it.name}</td>
-      <td style="text-align:center;">${it.unit}</td>
-      <td style="text-align:center;">${it.qty}</td>
-      <td style="text-align:right;">${cost ? '&#8369;' + Number(cost).toLocaleString('en-PH',{minimumFractionDigits:2}) : ''}</td>
-      <td style="text-align:right;">${total ? '&#8369;' + total : ''}</td>
+      <td style="${TD}text-align:center;vertical-align:middle;">${i+1}</td>
+      <td style="${TD}vertical-align:middle;">${it.name}</td>
+      <td style="${TD}text-align:center;vertical-align:middle;">${it.unit}</td>
+      <td style="${TD}text-align:center;vertical-align:middle;">${it.qty}</td>
+      <td style="${TD}text-align:right;vertical-align:middle;">${cost ? '&#8369;'+cost : ''}</td>
+      <td style="${TD}text-align:right;vertical-align:middle;">${total ? '&#8369;'+total : ''}</td>
     </tr>`;
   }).join('');
 
-  const today = new Date().toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'});
+  const totalQty  = (iar.items||[]).reduce((s,i)=>s+Number(i.qty||0),0);
+  const totalCost = (iar.items||[]).reduce((s,i)=>s+(Number(i.qty||0)*Number(i.unitCost||0)),0)
+                      .toLocaleString('en-PH',{minimumFractionDigits:2});
 
-  return `<div class="ris-form" id="iar-form-content" style="font-family:Arial,sans-serif;font-size:11px;color:#000;max-width:720px;margin:0 auto;padding:12px;">
-    <div style="text-align:center;margin-bottom:2px;font-size:10px;">Republic of the Philippines</div>
-    <div style="text-align:center;margin-bottom:2px;font-size:10px;">Department of Migrant Workers</div>
-    <div style="text-align:center;font-weight:700;font-size:14px;margin-bottom:4px;">INSPECTION AND ACCEPTANCE REPORT</div>
-    <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
-      <div>Entity Name: <strong>DMW RO-CAR</strong></div>
-      <div>Fund Cluster: <span style="border-bottom:1px solid #000;min-width:120px;display:inline-block;">&nbsp;${iar.fund || ''}&nbsp;</span></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
-      <div>Supplier: <span style="border-bottom:1px solid #000;min-width:200px;display:inline-block;">&nbsp;${iar.supplier || ''}&nbsp;</span></div>
-      <div>IAR No.: <strong>${iar.iarNo}</strong></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
-      <div>PO No./Date: <span style="border-bottom:1px solid #000;min-width:180px;display:inline-block;">&nbsp;${iar.poNo || ''}&nbsp;</span></div>
-      <div>Date: <span style="border-bottom:1px solid #000;min-width:120px;display:inline-block;">&nbsp;${iar.date || ''}&nbsp;</span></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
-      <div>Requisitioning Office/Dept.: <span style="border-bottom:1px solid #000;min-width:160px;display:inline-block;">&nbsp;${iar.reqOffice || ''}&nbsp;</span></div>
-      <div>Invoice No.: <span style="border-bottom:1px solid #000;min-width:120px;display:inline-block;">&nbsp;&nbsp;</span></div>
-    </div>
-    <div style="margin-bottom:8px;">
-      Responsibility Center Code: <span style="border-bottom:1px solid #000;min-width:160px;display:inline-block;">&nbsp;&nbsp;</span>
-      &nbsp;&nbsp;&nbsp;Date: <span style="border-bottom:1px solid #000;min-width:120px;display:inline-block;">&nbsp;&nbsp;</span>
-    </div>
+  return `<div id="iar-form-content" style="font-family:Arial,sans-serif;font-size:11px;color:#000;max-width:720px;margin:0 auto;padding:16px;">
 
-    <table style="width:100%;border-collapse:collapse;margin-bottom:8px;">
+    <!-- Header -->
+    <div style="text-align:center;font-size:10px;line-height:1.5;">Republic of the Philippines</div>
+    <div style="text-align:center;font-size:10px;line-height:1.5;margin-bottom:2px;">Department of Migrant Workers</div>
+    <div style="text-align:center;font-weight:700;font-size:13px;letter-spacing:0.5px;margin-bottom:8px;">INSPECTION AND ACCEPTANCE REPORT</div>
+
+    <!-- Meta fields using a 2-column table for perfect alignment -->
+    <table style="width:100%;border-collapse:collapse;margin-bottom:2px;font-size:11px;">
+      <colgroup><col style="width:55%"><col style="width:45%"></colgroup>
+      <tr>
+        <td style="padding:2px 0;">Entity Name:&nbsp;<strong>DMW RO-CAR</strong></td>
+        <td style="padding:2px 0;">Fund Cluster:&nbsp;<span style="${UL}80px;">&nbsp;${iar.fund||''}&nbsp;</span></td>
+      </tr>
+      <tr>
+        <td style="padding:2px 0;">Supplier:&nbsp;<span style="${UL}200px;">&nbsp;${iar.supplier||''}&nbsp;</span></td>
+        <td style="padding:2px 0;">IAR No.:&nbsp;<strong>${iar.iarNo||''}</strong></td>
+      </tr>
+      <tr>
+        <td style="padding:2px 0;">PO No./Date:&nbsp;<span style="${UL}190px;">&nbsp;${iar.poNo||''}&nbsp;</span></td>
+        <td style="padding:2px 0;">Date:&nbsp;<span style="${UL}130px;">&nbsp;${iar.date||''}&nbsp;</span></td>
+      </tr>
+      <tr>
+        <td style="padding:2px 0;">Requisitioning Office/Dept.:&nbsp;<span style="${UL}155px;">&nbsp;${iar.reqOffice||''}&nbsp;</span></td>
+        <td style="padding:2px 0;">Invoice No.:&nbsp;<span style="${UL}130px;">&nbsp;&nbsp;</span></td>
+      </tr>
+      <tr>
+        <td colspan="2" style="padding:2px 0 6px 0;">
+          Responsibility Center Code:&nbsp;<span style="${UL}160px;">&nbsp;&nbsp;</span>
+          &nbsp;&nbsp;&nbsp;Date:&nbsp;<span style="${UL}120px;">&nbsp;&nbsp;</span>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Items table -->
+    <table style="width:100%;border-collapse:collapse;margin-bottom:0;">
       <thead>
-        <tr style="background:#f0f0f0;">
-          <th style="border:1px solid #000;padding:4px 6px;width:32px;text-align:center;">Stock/<br>Prop No.</th>
-          <th style="border:1px solid #000;padding:4px 6px;">Description</th>
-          <th style="border:1px solid #000;padding:4px 6px;width:50px;text-align:center;">Unit</th>
-          <th style="border:1px solid #000;padding:4px 6px;width:55px;text-align:center;">Quantity</th>
-          <th style="border:1px solid #000;padding:4px 6px;width:80px;text-align:center;">Unit Cost</th>
-          <th style="border:1px solid #000;padding:4px 6px;width:90px;text-align:center;">Total Cost</th>
+        <tr style="background:#efefef;">
+          <th style="${TD}width:36px;text-align:center;vertical-align:middle;font-size:10px;">STOCK/<br>PROP<br>NO.</th>
+          <th style="${TD}text-align:center;vertical-align:middle;">DESCRIPTION</th>
+          <th style="${TD}width:52px;text-align:center;vertical-align:middle;">UNIT</th>
+          <th style="${TD}width:58px;text-align:center;vertical-align:middle;">QUANTITY</th>
+          <th style="${TD}width:82px;text-align:center;vertical-align:middle;">UNIT COST</th>
+          <th style="${TD}width:92px;text-align:center;vertical-align:middle;">TOTAL COST</th>
         </tr>
       </thead>
       <tbody>${itemRows}</tbody>
       <tr>
-        <td colspan="3" style="border:1px solid #000;padding:4px 6px;text-align:right;font-weight:bold;">TOTAL</td>
-        <td style="border:1px solid #000;padding:4px 6px;text-align:center;font-weight:bold;">${(iar.items||[]).reduce((s,i)=>s+Number(i.qty||0),0)}</td>
-        <td style="border:1px solid #000;"></td>
-        <td style="border:1px solid #000;padding:4px 6px;text-align:right;font-weight:bold;">&#8369;${(iar.items||[]).reduce((s,i)=>s+(Number(i.qty||0)*Number(i.unitCost||0)),0).toLocaleString('en-PH',{minimumFractionDigits:2})}</td>
+        <td colspan="3" style="${TD}text-align:right;font-weight:700;">TOTAL</td>
+        <td style="${TD}text-align:center;font-weight:700;">${totalQty}</td>
+        <td style="${TD}"></td>
+        <td style="${TD}text-align:right;font-weight:700;">&#8369;${totalCost}</td>
       </tr>
     </table>
 
-    <table style="width:100%;border-collapse:collapse;margin-bottom:0;">
+    <!-- Inspection / Acceptance -->
+    <table style="width:100%;border-collapse:collapse;border-top:none;">
       <tr>
-        <td style="border:1px solid #000;padding:8px;width:50%;vertical-align:top;">
-          <div style="font-weight:700;text-align:center;margin-bottom:6px;">INSPECTION</div>
-          <div style="margin-bottom:4px;">Date Inspected: <span style="border-bottom:1px solid #000;min-width:100px;display:inline-block;">&nbsp;${iar.date || ''}&nbsp;</span></div>
-          <div style="margin-bottom:16px;">Inspected, verified and found in order as to quantity and specifications.</div>
-          <div style="margin-bottom:24px;">&nbsp;</div>
-          <div style="border-top:1px solid #000;text-align:center;padding-top:4px;font-weight:700;">NAME OF EMPLOYEE</div>
+        <td style="${TD}width:50%;vertical-align:top;border-top:none;">
+          <div style="font-weight:700;text-align:center;margin-bottom:5px;">INSPECTION</div>
+          <div style="margin-bottom:4px;">Date Inspected:&nbsp;<span style="${UL}110px;">&nbsp;${iar.date||''}&nbsp;</span></div>
+          <div style="margin-bottom:18px;line-height:1.5;">Inspected, verified and found in order as to quantity<br>and specifications.</div>
+          <div style="height:30px;"></div>
+          <div style="border-top:1px solid #000;text-align:center;padding-top:3px;font-weight:700;font-size:11px;">NAME OF EMPLOYEE</div>
           <div style="text-align:center;font-size:10px;">Inspection Committee</div>
         </td>
-        <td style="border:1px solid #000;padding:8px;width:50%;vertical-align:top;">
-          <div style="font-weight:700;text-align:center;margin-bottom:6px;">ACCEPTANCE</div>
-          <div style="margin-bottom:4px;">Date Received: <span style="border-bottom:1px solid #000;min-width:100px;display:inline-block;">&nbsp;${iar.date || ''}&nbsp;</span></div>
-          <div style="margin-bottom:4px;">&#9634; Complete &nbsp;&nbsp;&nbsp; &#9634; Partial (pls. specify quantity)</div>
-          <div style="margin-bottom:24px;">&nbsp;</div>
-          <div style="border-top:1px solid #000;text-align:center;padding-top:4px;font-weight:700;">MARILOU S. BUGATAN</div>
+        <td style="${TD}width:50%;vertical-align:top;border-top:none;">
+          <div style="font-weight:700;text-align:center;margin-bottom:5px;">ACCEPTANCE</div>
+          <div style="margin-bottom:4px;">Date Received:&nbsp;<span style="${UL}110px;">&nbsp;${iar.date||''}&nbsp;</span></div>
+          <div style="margin-bottom:4px;">&#9633; Complete &nbsp;&nbsp;&nbsp; &#9633; Partial (pls. specify quantity)</div>
+          <div style="height:44px;"></div>
+          <div style="border-top:1px solid #000;text-align:center;padding-top:3px;font-weight:700;font-size:11px;">MARILOU S. BUGATAN</div>
           <div style="text-align:center;font-size:10px;">AO I (Supply Officer I)</div>
         </td>
       </tr>
     </table>
-    <div style="font-size:10px;text-align:right;margin-top:4px;">DV / JEV / SO / IC</div>
+    <div style="font-size:10px;text-align:right;margin-top:4px;padding-right:2px;">DV / JEV / SO / IC</div>
   </div>`;
 }
 
