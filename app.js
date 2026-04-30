@@ -851,30 +851,43 @@ function buildIARFormHTML(iar) {
     <div style="text-align:center;font-size:10px;line-height:1.5;margin-bottom:2px;">Department of Migrant Workers</div>
     <div style="text-align:center;font-weight:700;font-size:13px;letter-spacing:0.5px;margin-bottom:8px;">INSPECTION AND ACCEPTANCE REPORT</div>
 
-    <!-- Meta fields using a 2-column table for perfect alignment -->
-    <table style="width:100%;border-collapse:collapse;margin-bottom:2px;font-size:11px;">
-      <colgroup><col style="width:55%"><col style="width:45%"></colgroup>
+    <!-- Meta fields — 4-column table: label | value | label | value -->
+    <table style="width:100%;border-collapse:collapse;margin-bottom:4px;font-size:11px;">
+      <colgroup>
+        <col style="width:20%">
+        <col style="width:35%">
+        <col style="width:16%">
+        <col style="width:29%">
+      </colgroup>
       <tr>
-        <td style="padding:2px 0;">Entity Name:&nbsp;<strong>DMW RO-CAR</strong></td>
-        <td style="padding:2px 0;">Fund Cluster:&nbsp;<span style="${UL}80px;">&nbsp;${iar.fund||''}&nbsp;</span></td>
+        <td style="padding:2px 4px 2px 0;white-space:nowrap;">Entity Name:</td>
+        <td style="padding:2px 4px;"><strong>DMW RO-CAR</strong></td>
+        <td style="padding:2px 4px;white-space:nowrap;text-align:right;">Fund Cluster:</td>
+        <td style="padding:2px 0 2px 4px;border-bottom:1px solid #000;">&nbsp;${iar.fund||''}</td>
       </tr>
       <tr>
-        <td style="padding:2px 0;">Supplier:&nbsp;<span style="${UL}200px;">&nbsp;${iar.supplier||''}&nbsp;</span></td>
-        <td style="padding:2px 0;">IAR No.:&nbsp;<strong>${iar.iarNo||''}</strong></td>
+        <td style="padding:2px 4px 2px 0;white-space:nowrap;">Supplier:</td>
+        <td style="padding:2px 4px;border-bottom:1px solid #000;">&nbsp;${iar.supplier||''}</td>
+        <td style="padding:2px 4px;white-space:nowrap;text-align:right;">IAR No.:</td>
+        <td style="padding:2px 0 2px 4px;"><strong>${iar.iarNo||''}</strong></td>
       </tr>
       <tr>
-        <td style="padding:2px 0;">PO No./Date:&nbsp;<span style="${UL}190px;">&nbsp;${iar.poNo||''}&nbsp;</span></td>
-        <td style="padding:2px 0;">Date:&nbsp;<span style="${UL}130px;">&nbsp;${iar.date||''}&nbsp;</span></td>
+        <td style="padding:2px 4px 2px 0;white-space:nowrap;">PO No./Date:</td>
+        <td style="padding:2px 4px;border-bottom:1px solid #000;">&nbsp;${iar.poNo||''}</td>
+        <td style="padding:2px 4px;white-space:nowrap;text-align:right;">Date:</td>
+        <td style="padding:2px 0 2px 4px;border-bottom:1px solid #000;">&nbsp;${iar.date||''}</td>
       </tr>
       <tr>
-        <td style="padding:2px 0;">Requisitioning Office/Dept.:&nbsp;<span style="${UL}155px;">&nbsp;${iar.reqOffice||''}&nbsp;</span></td>
-        <td style="padding:2px 0;">Invoice No.:&nbsp;<span style="${UL}130px;">&nbsp;&nbsp;</span></td>
+        <td style="padding:2px 4px 2px 0;white-space:nowrap;">Requisitioning Office/Dept.:</td>
+        <td style="padding:2px 4px;border-bottom:1px solid #000;">&nbsp;${iar.reqOffice||''}</td>
+        <td style="padding:2px 4px;white-space:nowrap;text-align:right;">Invoice No.:</td>
+        <td style="padding:2px 0 2px 4px;border-bottom:1px solid #000;">&nbsp;</td>
       </tr>
       <tr>
-        <td colspan="2" style="padding:2px 0 6px 0;">
-          Responsibility Center Code:&nbsp;<span style="${UL}160px;">&nbsp;&nbsp;</span>
-          &nbsp;&nbsp;&nbsp;Date:&nbsp;<span style="${UL}120px;">&nbsp;&nbsp;</span>
-        </td>
+        <td style="padding:2px 4px 2px 0;white-space:nowrap;">Responsibility Center Code:</td>
+        <td style="padding:2px 4px;border-bottom:1px solid #000;">&nbsp;</td>
+        <td style="padding:2px 4px;white-space:nowrap;text-align:right;">Date:</td>
+        <td style="padding:2px 0 2px 4px;border-bottom:1px solid #000;">&nbsp;</td>
       </tr>
     </table>
 
