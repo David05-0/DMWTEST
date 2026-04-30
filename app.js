@@ -563,11 +563,37 @@ function renderRequests() {
         ${r.status === 'Approved' ? `
           <button class="btn btn-primary btn-sm" onclick="updateStatus('${r.risNo}','Issued')" style="margin-left:4px">Issue</button>` : ''}
         <button class="btn btn-outline btn-sm" onclick="openPrintRIS('${r.risNo}')" style="margin-left:4px" title="Print RIS">🖨️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRequestPrompt('${r._id}','${r.risNo}')" style="margin-left:4px" title="Delete Request">🗑️</button>
       </td>
     </tr>`).join('');
   updatePendingBadge();
 }
 function filterRequests(v) { reqFilter = v; renderRequests(); }
+
+// ════════════════════════════════════════════════════════════
+// DELETE REQUEST — Admin
+// ════════════════════════════════════════════════════════════
+let deleteRequestId   = null;
+let deleteRequestRisNo = null;
+
+function deleteRequestPrompt(id, risNo) {
+  deleteRequestId    = id;
+  deleteRequestRisNo = risNo;
+  document.getElementById('delete-request-risno').textContent = risNo;
+  document.getElementById('modal-confirm-delete-request').classList.add('open');
+}
+
+async function confirmDeleteRequest() {
+  if (!deleteRequestId) return;
+  try {
+    await db.collection('requests').doc(deleteRequestId).delete();
+    showToast('🗑️ Request ' + deleteRequestRisNo + ' deleted.');
+    closeModal('modal-confirm-delete-request');
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to delete request.');
+  }
+}
 
 async function updateStatus(risNo, status) {
   const req = REQUESTS.find(r => r.risNo === risNo);
@@ -1273,8 +1299,10 @@ function renderIAR() {
       + '<td>' + statusBadge + '</td>'
       + '<td>'
       + '<button class="btn btn-outline btn-sm" onclick="viewIAR(\'' + iar._id + '\')">View</button>'
+      + '<button class="btn btn-outline btn-sm" onclick="openEditIARModal(\'' + iar._id + '\')" style="margin-left:4px" title="Edit IAR">✏️</button>'
       + '<button class="btn btn-outline btn-sm" onclick="openPrintIAR(\'' + iar._id + '\')" style="margin-left:4px" title="Print IAR">&#128424;&#65039;</button>'
       + (!iar.accepted ? '<button class="btn btn-success btn-sm" onclick="acceptIAR(\'' + iar._id + '\')" style="margin-left:4px">Accept &amp; Add to Stock</button>' : '')
+      + '<button class="btn btn-danger btn-sm" onclick="deleteIARPrompt(\'' + iar._id + '\',\'' + iar.iarNo + '\')" style="margin-left:4px" title="Delete IAR">🗑️</button>'
       + '</td>'
       + '</tr>';
   }).join('');
@@ -1353,6 +1381,121 @@ async function saveIAR() {
     showToast('⚠️ Failed to save IAR.');
   } finally {
     if (btn) { btn.textContent = 'Save IAR'; btn.disabled = false; }
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// DELETE IAR
+// ════════════════════════════════════════════════════════════
+let deleteIARId = null;
+let deleteIARNo = null;
+
+function deleteIARPrompt(id, iarNo) {
+  deleteIARId = id;
+  deleteIARNo = iarNo;
+  document.getElementById('delete-iar-no').textContent = iarNo;
+  document.getElementById('modal-confirm-delete-iar').classList.add('open');
+}
+
+async function confirmDeleteIAR() {
+  if (!deleteIARId) return;
+  try {
+    await db.collection('iars').doc(deleteIARId).delete();
+    showToast('🗑️ IAR ' + deleteIARNo + ' deleted.');
+    closeModal('modal-confirm-delete-iar');
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to delete IAR.');
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// EDIT IAR — Fix/update an existing IAR
+// ════════════════════════════════════════════════════════════
+let editingIARId = null;
+let editIARItems = [];
+
+function openEditIARModal(iarId) {
+  const iar = IARS.find(x => x._id === iarId);
+  if (!iar) return;
+  editingIARId = iarId;
+  editIARItems = (iar.items || []).map(i => ({ ...i }));
+  document.getElementById('edit-iar-no').value         = iar.iarNo     || '';
+  document.getElementById('edit-iar-supplier').value   = iar.supplier  || '';
+  document.getElementById('edit-iar-po').value         = iar.poNo      || '';
+  document.getElementById('edit-iar-date').value       = iar.date      || '';
+  document.getElementById('edit-iar-fund').value       = iar.fund      || '';
+  document.getElementById('edit-iar-req-office').value = iar.reqOffice || '';
+  renderEditIARItems();
+  document.getElementById('modal-edit-iar').classList.add('open');
+}
+
+function renderEditIARItems() {
+  const wrap = document.getElementById('edit-iar-items-wrap');
+  if (!editIARItems.length) {
+    wrap.innerHTML = '<p style="color:var(--gray-400);text-align:center;padding:20px;">No items. Click "+ Add Item" below.</p>';
+    return;
+  }
+  wrap.innerHTML = editIARItems.map((it, idx) => {
+    const opts = SUPPLIES.map(s =>
+      '<option value="' + s.name + '" ' + (s.name === it.name ? 'selected' : '') + '>' + s.name + '</option>'
+    ).join('');
+    return '<div style="display:grid;grid-template-columns:1fr 80px 80px 110px 36px;gap:8px;align-items:center;margin-bottom:8px;">'
+      + '<select onchange="editIARItemField(' + idx + ',\'name\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:\'DM Sans\';">' + opts + '</select>'
+      + '<input type="text" value="' + it.unit + '" placeholder="Unit" onchange="editIARItemField(' + idx + ',\'unit\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
+      + '<input type="number" value="' + it.qty + '" min="1" placeholder="Qty" onchange="editIARItemField(' + idx + ',\'qty\',parseInt(this.value)||1)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
+      + '<input type="number" value="' + (it.unitCost||0) + '" min="0" step="0.01" placeholder="Unit Cost" onchange="editIARItemField(' + idx + ',\'unitCost\',parseFloat(this.value)||0)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:right;" />'
+      + '<button onclick="removeEditIARItem(' + idx + ')" style="background:var(--red);color:white;border:none;border-radius:8px;cursor:pointer;font-size:16px;height:36px;width:36px;">&#10005;</button>'
+      + '</div>';
+  }).join('');
+}
+
+function editIARItemField(idx, field, value) {
+  editIARItems[idx][field] = value;
+  if (field === 'name') {
+    const s = SUPPLIES.find(x => x.name === value);
+    if (s) { editIARItems[idx].unit = s.unit; editIARItems[idx].unitCost = s.unitCost || 0; }
+    renderEditIARItems();
+  }
+}
+
+function addEditIARItem() {
+  const s = SUPPLIES[0];
+  editIARItems.push({ name: s.name, unit: s.unit, qty: 1, unitCost: s.unitCost || 0 });
+  renderEditIARItems();
+}
+
+function removeEditIARItem(idx) {
+  editIARItems.splice(idx, 1);
+  renderEditIARItems();
+}
+
+async function saveEditIAR() {
+  if (!editingIARId) return;
+  if (!editIARItems.length) { showToast('Add at least one item.'); return; }
+  const supplier = document.getElementById('edit-iar-supplier').value.trim();
+  const date     = document.getElementById('edit-iar-date').value;
+  if (!supplier || !date) { showToast('Supplier and Date are required.'); return; }
+  const btn = document.querySelector('#modal-edit-iar .btn-gold');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+  try {
+    await db.collection('iars').doc(editingIARId).update({
+      iarNo:     document.getElementById('edit-iar-no').value.trim(),
+      supplier,
+      poNo:      document.getElementById('edit-iar-po').value.trim(),
+      date,
+      fund:      document.getElementById('edit-iar-fund').value.trim(),
+      reqOffice: document.getElementById('edit-iar-req-office').value.trim(),
+      items:     editIARItems,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('✅ IAR updated successfully!');
+    closeModal('modal-edit-iar');
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to update IAR.');
+  } finally {
+    if (btn) { btn.textContent = 'Save Changes'; btn.disabled = false; }
   }
 }
 
@@ -1461,4 +1604,13 @@ document.getElementById('modal-edit-ris').addEventListener('click', function(e) 
 });
 document.getElementById('modal-iar').addEventListener('click', function(e) {
   if (e.target === this) closeModal('modal-iar');
+});
+document.getElementById('modal-confirm-delete-request').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-confirm-delete-request');
+});
+document.getElementById('modal-confirm-delete-iar').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-confirm-delete-iar');
+});
+document.getElementById('modal-edit-iar').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('modal-edit-iar');
 });
