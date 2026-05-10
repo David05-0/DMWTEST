@@ -48,7 +48,7 @@
       <!-- populated by JS -->
     </nav>
     <div class="sidebar-user">
-      <div class="user-avatar" id="user-avatar">A</div>
+      <div class="user-avatar" id="user-avatar" style="overflow:hidden;"></div>
       <div class="user-info">
         <div class="name" id="user-name">Admin</div>
         <div class="role" id="user-role-label">Administrator</div>
@@ -238,7 +238,7 @@
         </div>
         <div class="card-body table-wrap">
           <table><thead><tr>
-            <th>Full Name</th><th>Username</th><th>Division</th><th>Role</th><th>Actions</th>
+            <th>Photo</th><th>Full Name</th><th>Username</th><th>Position</th><th>Designation</th><th>Division</th><th>Role</th><th>Actions</th>
           </tr></thead>
           <tbody id="manage-accounts-table"></tbody></table>
         </div>
@@ -285,6 +285,15 @@
       <button class="modal-close" onclick="closeModal('modal-account')">✕</button>
     </div>
     <div class="modal-body">
+      <!-- Profile Image Upload -->
+      <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px;">
+        <div id="acct-photo-preview" style="width:90px;height:90px;border-radius:50%;background:var(--gray-100);border:3px solid var(--gray-200);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:36px;color:var(--gray-400);margin-bottom:10px;cursor:pointer;" onclick="document.getElementById('acct-photo-input').click()">
+          👤
+        </div>
+        <input type="file" id="acct-photo-input" accept="image/*" style="display:none;" onchange="previewAccountPhoto(this)" />
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('acct-photo-input').click()" type="button">📷 Upload Photo</button>
+        <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">JPG, PNG — max 2MB. Stored as profile photo.</div>
+      </div>
       <div class="form-grid">
         <div class="field" style="grid-column:1/-1">
           <label>Full Name</label>
@@ -298,14 +307,22 @@
           <label>Password</label>
           <input type="text" id="acct-password" placeholder="Set a password" autocomplete="off" />
         </div>
+        <div class="field">
+          <label>Position</label>
+          <input type="text" id="acct-position" placeholder="e.g., Administrative Officer II" />
+        </div>
+        <div class="field">
+          <label>Designation</label>
+          <input type="text" id="acct-designation" placeholder="e.g., Records Officer" />
+        </div>
         <div class="field" style="grid-column:1/-1">
           <label>Division</label>
-<select id="acct-division" style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:10px;font-family:'DM Sans';font-size:14px;color:var(--text);background:var(--white);outline:none;">
-              <option value="">-- Select Division --</option>
-              <option value="Migrant Workers Processing Division">Migrant Workers Processing Division</option>
-              <option value="Migrant Workers Protection Division">Migrant Workers Protection Division</option>
-              <option value="Migrant Workers Welfare and Reintegration Services Division">Migrant Workers Welfare and Reintegration Services Division</option>
-              <option value="Finance and Administration Division">Finance and Administration Division</option>
+          <select id="acct-division" style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:10px;font-family:'DM Sans';font-size:14px;color:var(--text);background:var(--white);outline:none;">
+            <option value="">-- Select Division --</option>
+            <option value="Migrant Workers Processing Division">Migrant Workers Processing Division</option>
+            <option value="Migrant Workers Protection Division">Migrant Workers Protection Division</option>
+            <option value="Migrant Workers Welfare and Reintegration Services Division">Migrant Workers Welfare and Reintegration Services Division</option>
+            <option value="Finance and Administration Division">Finance and Administration Division</option>
           </select>
         </div>
       </div>
