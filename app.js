@@ -121,7 +121,7 @@ function doLogin() {
     const found = ACCOUNTS.find(a => a.username === u && a.password === p);
     if (found) {
       err.style.display = 'none';
-      currentUser = { name: found.name, role: 'Employee', username: found.username, division: found.division || '' };
+      currentUser = { name: found.name, role: 'Employee', username: found.username, division: found.division || '', position: found.position || '', designation: found.designation || '', photoUrl: found.photoUrl || '' };
       currentRole = 'employee';
       launchApp();
     } else {
@@ -130,7 +130,7 @@ function doLogin() {
         if (!snap.empty) {
           const data = snap.docs[0].data();
           err.style.display = 'none';
-          currentUser = { name: data.name, role: 'Employee', username: data.username, division: data.division || '' };
+          currentUser = { name: data.name, role: 'Employee', username: data.username, division: data.division || '', position: data.position || '', designation: data.designation || '', photoUrl: data.photoUrl || '' };
           currentRole = 'employee';
           launchApp();
         } else {
@@ -201,7 +201,14 @@ function confirmLogout() {
 // APP SETUP & NAVIGATION
 // ════════════════════════════════════════════════════════════
 function setupApp() {
-  document.getElementById('user-avatar').textContent     = currentUser.name[0];
+  const avatarEl = document.getElementById('user-avatar');
+  if (currentUser.photoUrl) {
+    avatarEl.innerHTML = `<img src="${currentUser.photoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+    avatarEl.style.background = 'transparent';
+  } else {
+    avatarEl.textContent = currentUser.name[0];
+    avatarEl.style.background = '';
+  }
   document.getElementById('user-name').textContent       = currentUser.name;
   document.getElementById('user-role-label').textContent = currentUser.role;
 
@@ -982,9 +989,17 @@ let cart = {};
 function resetRequestForm() {
   document.getElementById('req-step1').style.display = 'block';
   document.getElementById('req-step2').style.display = 'none';
-  ['req-division','req-designation','req-name','req-purpose'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
+  // Auto-fill from logged-in employee profile
+  if (currentRole === 'employee') {
+    document.getElementById('req-name').value        = currentUser.name || '';
+    document.getElementById('req-division').value    = currentUser.division || '';
+    document.getElementById('req-designation').value = currentUser.designation || currentUser.position || '';
+  } else {
+    ['req-division','req-designation','req-name','req-purpose'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+  }
+  document.getElementById('req-purpose').value = '';
   cart = {};
 }
 
@@ -1104,48 +1119,88 @@ async function submitRequest() {
 function renderManageAccounts() {
   const tb = document.getElementById('manage-accounts-table');
   if (!ACCOUNTS.length) {
-    tb.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">👥</div><p>No employee accounts yet. Click "Add Account" to create one.</p></div></td></tr>`;
+    tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">👥</div><p>No employee accounts yet. Click "Add Account" to create one.</p></div></td></tr>`;
     return;
   }
-  tb.innerHTML = ACCOUNTS.map(a => `
+  tb.innerHTML = ACCOUNTS.map(a => {
+    const photoHtml = a.photoUrl
+      ? `<img src="${a.photoUrl}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid var(--gray-200);" />`
+      : `<div style="width:38px;height:38px;border-radius:50%;background:var(--navy-light);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--gold);">${a.name[0]}</div>`;
+    return `
     <tr>
+      <td>${photoHtml}</td>
       <td><strong>${a.name}</strong></td>
       <td>${a.username}</td>
+      <td>${a.position || '—'}</td>
+      <td>${a.designation || '—'}</td>
       <td>${a.division || '—'}</td>
       <td><span class="badge badge-issued">Employee</span></td>
       <td>
         <button class="btn btn-outline btn-sm" onclick="openAccountModal('${a._id}')">✏️ Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteAccountPrompt('${a._id}','${a.name.replace(/'/g,"\'")}') " style="margin-left:4px">🗑️ Delete</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
+let editingAccountPhotoBase64 = null; // holds base64 of newly selected photo
+
 let editingAccountId = null;
+let editingAccountPhotoBase64 = null; // holds base64 of newly selected photo
+
+function previewAccountPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (file.size > 2 * 1024 * 1024) { showToast('⚠️ Photo must be under 2MB.'); input.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    editingAccountPhotoBase64 = e.target.result;
+    const preview = document.getElementById('acct-photo-preview');
+    preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" />`;
+  };
+  reader.readAsDataURL(file);
+}
 
 function openAccountModal(accountId) {
   editingAccountId = accountId || null;
+  editingAccountPhotoBase64 = null;
   document.getElementById('modal-account-title').textContent = accountId ? '✏️ Edit Account' : '➕ Add Employee Account';
+
+  // Reset photo preview
+  const preview = document.getElementById('acct-photo-preview');
+  preview.innerHTML = '👤';
+  document.getElementById('acct-photo-input').value = '';
+
   if (accountId) {
     const a = ACCOUNTS.find(x => x._id === accountId);
     if (!a) return;
-    document.getElementById('acct-name').value     = a.name;
-    document.getElementById('acct-username').value = a.username;
-    document.getElementById('acct-password').value = a.password;
-    document.getElementById('acct-division').value = a.division || '';
+    document.getElementById('acct-name').value        = a.name;
+    document.getElementById('acct-username').value    = a.username;
+    document.getElementById('acct-password').value    = a.password;
+    document.getElementById('acct-division').value    = a.division || '';
+    document.getElementById('acct-position').value    = a.position || '';
+    document.getElementById('acct-designation').value = a.designation || '';
+    if (a.photoUrl) {
+      preview.innerHTML = `<img src="${a.photoUrl}" style="width:100%;height:100%;object-fit:cover;" />`;
+    }
   } else {
-    document.getElementById('acct-name').value     = '';
-    document.getElementById('acct-username').value = '';
-    document.getElementById('acct-password').value = '';
-    document.getElementById('acct-division').value = '';
+    document.getElementById('acct-name').value        = '';
+    document.getElementById('acct-username').value    = '';
+    document.getElementById('acct-password').value    = '';
+    document.getElementById('acct-division').value    = '';
+    document.getElementById('acct-position').value    = '';
+    document.getElementById('acct-designation').value = '';
   }
   document.getElementById('modal-account').classList.add('open');
 }
 
 async function saveAccount() {
-  const name     = document.getElementById('acct-name').value.trim();
-  const username = document.getElementById('acct-username').value.trim();
-  const password = document.getElementById('acct-password').value.trim();
-  const division = document.getElementById('acct-division').value.trim();
+  const name        = document.getElementById('acct-name').value.trim();
+  const username    = document.getElementById('acct-username').value.trim();
+  const password    = document.getElementById('acct-password').value.trim();
+  const division    = document.getElementById('acct-division').value.trim();
+  const position    = document.getElementById('acct-position').value.trim();
+  const designation = document.getElementById('acct-designation').value.trim();
 
   if (!name || !username || !password) {
     showToast('Please fill in Name, Username, and Password.');
@@ -1156,7 +1211,13 @@ async function saveAccount() {
   const duplicate = ACCOUNTS.find(a => a.username === username && a._id !== editingAccountId);
   if (duplicate) { showToast('⚠️ Username already exists. Choose another.'); return; }
 
-  const data = { name, username, password, division, role: 'Employee' };
+  const data = { name, username, password, division, position, designation, role: 'Employee' };
+
+  // Attach photo if a new one was selected
+  if (editingAccountPhotoBase64) {
+    data.photoUrl = editingAccountPhotoBase64;
+  }
+
   const btn  = document.querySelector('#modal-account .btn-gold');
   if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
 
