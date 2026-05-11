@@ -991,12 +991,46 @@ let cart = {};
 function resetRequestForm() {
   document.getElementById('req-step1').style.display = 'block';
   document.getElementById('req-step2').style.display = 'none';
-  // Auto-fill from current user's profile (works for both admin and employee)
-  document.getElementById('req-name').value        = currentUser.name || '';
-  document.getElementById('req-division').value    = currentUser.division || '';
-  document.getElementById('req-designation').value = currentUser.designation || currentUser.position || '';
-  document.getElementById('req-purpose').value     = '';
+  document.getElementById('req-purpose').value = '';
   cart = {};
+
+  const nameEl = document.getElementById('req-name');
+  const divEl  = document.getElementById('req-division');
+  const desgEl = document.getElementById('req-designation');
+
+  if (currentRole === 'employee') {
+    // Pre-fill from saved profile and lock the fields
+    nameEl.value  = currentUser.name || '';
+    desgEl.value  = currentUser.designation || currentUser.position || '';
+    divEl.value   = currentUser.division || '';
+
+    nameEl.readOnly = true;
+    desgEl.readOnly = true;
+    divEl.disabled  = true;
+    [nameEl, desgEl, divEl].forEach(el => {
+      el.style.background    = 'var(--gray-50)';
+      el.style.color         = 'var(--gray-600)';
+      el.style.cursor        = 'not-allowed';
+      el.style.opacity       = '1';
+      el.style.pointerEvents = 'none';
+    });
+  } else {
+    // Admin: fully editable
+    nameEl.value  = '';
+    desgEl.value  = '';
+    divEl.value   = '';
+
+    nameEl.readOnly = false;
+    desgEl.readOnly = false;
+    divEl.disabled  = false;
+    [nameEl, desgEl, divEl].forEach(el => {
+      el.style.background    = '';
+      el.style.color         = '';
+      el.style.cursor        = '';
+      el.style.opacity       = '';
+      el.style.pointerEvents = '';
+    });
+  }
 }
 
 function goToStep2() {
