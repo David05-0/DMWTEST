@@ -716,3 +716,22 @@
   object-fit: cover;
   border-radius: 50%;
 }
+
+/* ── MY PROFILE PAGE ── */
+#profile-photo-preview {
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+#profile-photo-preview:hover {
+  box-shadow: 0 0 0 4px rgba(232,160,32,0.25);
+}
+
+/* ── SIDEBAR USER CLICKABLE ── */
+.sidebar-user {
+  transition: background 0.18s;
+}
+.sidebar-user:hover {
+  background: rgba(255,255,255,0.05);
+}
+.sidebar-user:hover .user-info .name {
+  color: var(--gold);
+}
