@@ -991,17 +991,11 @@ let cart = {};
 function resetRequestForm() {
   document.getElementById('req-step1').style.display = 'block';
   document.getElementById('req-step2').style.display = 'none';
-  // Auto-fill from logged-in employee profile
-  if (currentRole === 'employee') {
-    document.getElementById('req-name').value        = currentUser.name || '';
-    document.getElementById('req-division').value    = currentUser.division || '';
-    document.getElementById('req-designation').value = currentUser.designation || currentUser.position || '';
-  } else {
-    ['req-division','req-designation','req-name','req-purpose'].forEach(id => {
-      document.getElementById(id).value = '';
-    });
-  }
-  document.getElementById('req-purpose').value = '';
+  // Auto-fill from current user's profile (works for both admin and employee)
+  document.getElementById('req-name').value        = currentUser.name || '';
+  document.getElementById('req-division').value    = currentUser.division || '';
+  document.getElementById('req-designation').value = currentUser.designation || currentUser.position || '';
+  document.getElementById('req-purpose').value     = '';
   cart = {};
 }
 
@@ -1686,15 +1680,16 @@ let profilePhotoBase64 = null;
 function renderMyProfile() {
   profilePhotoBase64 = null;
 
-  // Show/hide employee-only fields
+  // All roles see all fields now
   document.querySelectorAll('.profile-employee-only').forEach(el => {
-    el.style.display = currentRole === 'employee' ? '' : 'none';
+    el.style.display = '';
   });
 
   // Populate fields from currentUser
   document.getElementById('profile-name').value        = currentUser.name || '';
   document.getElementById('profile-position').value    = currentUser.position || '';
   document.getElementById('profile-designation').value = currentUser.designation || '';
+  document.getElementById('profile-division').value    = currentUser.division || '';
 
   // Photo preview
   const preview = document.getElementById('profile-photo-preview');
@@ -1727,6 +1722,7 @@ async function saveProfile() {
   const name        = document.getElementById('profile-name').value.trim();
   const position    = document.getElementById('profile-position').value.trim();
   const designation = document.getElementById('profile-designation').value.trim();
+  const division    = document.getElementById('profile-division').value.trim();
 
   if (!name) { showToast('Name cannot be empty.'); return; }
 
@@ -1738,25 +1734,22 @@ async function saveProfile() {
       // Update Firestore account doc
       const acct = ACCOUNTS.find(a => a.username === currentUser.username);
       if (!acct) { showToast('⚠️ Account not found.'); return; }
-      const update = { name, position, designation };
+      const update = { name, position, designation, division };
       if (profilePhotoBase64) update.photoUrl = profilePhotoBase64;
       await db.collection('accounts').doc(acct._id).update(update);
-      // Update currentUser in memory & session
-      currentUser.name        = name;
-      currentUser.position    = position;
-      currentUser.designation = designation;
-      if (profilePhotoBase64) currentUser.photoUrl = profilePhotoBase64;
-
-    } else {
-      // Admin — update in-memory + sessionStorage only (no Firestore account doc)
-      currentUser.name = name;
-      if (profilePhotoBase64) currentUser.photoUrl = profilePhotoBase64;
     }
 
-    // Persist session
+    // Update currentUser in memory for both roles
+    currentUser.name        = name;
+    currentUser.position    = position;
+    currentUser.designation = designation;
+    currentUser.division    = division;
+    if (profilePhotoBase64) currentUser.photoUrl = profilePhotoBase64;
+
+    // Persist session (works for admin too)
     sessionStorage.setItem('dmw_session', JSON.stringify({ user: currentUser, role: currentRole }));
 
-    // Refresh sidebar
+    // Refresh sidebar avatar and name
     const avatarEl = document.getElementById('user-avatar');
     if (currentUser.photoUrl) {
       avatarEl.innerHTML = `<img src="${currentUser.photoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
@@ -1767,7 +1760,7 @@ async function saveProfile() {
     }
     document.getElementById('user-name').textContent = currentUser.name;
 
-    showToast('✅ Profile saved!');
+    showToast('✅ Profile saved! Your info will auto-fill in new requests.');
   } catch(e) {
     console.error(e);
     showToast('⚠️ Failed to save profile.');
