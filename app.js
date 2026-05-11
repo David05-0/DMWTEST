@@ -255,6 +255,7 @@ function navigate(pageId) {
     'page-manage-accounts':  'Manage Employee Accounts',
     'page-supply-ledger':    'Supply Ledger (Monthly)',
     'page-iar':              'Inspection & Acceptance Reports',
+    'page-my-profile':       'My Profile',
   };
   document.getElementById('page-title').textContent = titles[pageId] || '';
   document.getElementById('topbar-actions').innerHTML = '';
@@ -267,6 +268,7 @@ function navigate(pageId) {
   if (pageId === 'page-manage-accounts')  renderManageAccounts();
   if (pageId === 'page-supply-ledger')    renderSupplyLedger();
   if (pageId === 'page-iar')              renderIAR();
+  if (pageId === 'page-my-profile')       renderMyProfile();
   if (pageId === 'page-new-request') {
     resetRequestForm();
     document.getElementById('topbar-actions').innerHTML =
@@ -1674,6 +1676,104 @@ function viewIAR(iarId) {
   document.getElementById('modal-ris-body').innerHTML = body;
   document.getElementById('modal-ris-footer').innerHTML = '<button class="btn btn-outline" onclick="closeModal(\'modal-ris\')">Close</button>';
   document.getElementById('modal-ris').classList.add('open');
+}
+
+// ════════════════════════════════════════════════════════════
+// MY PROFILE — self-edit for both admin and employee
+// ════════════════════════════════════════════════════════════
+let profilePhotoBase64 = null;
+
+function renderMyProfile() {
+  profilePhotoBase64 = null;
+
+  // Show/hide employee-only fields
+  document.querySelectorAll('.profile-employee-only').forEach(el => {
+    el.style.display = currentRole === 'employee' ? '' : 'none';
+  });
+
+  // Populate fields from currentUser
+  document.getElementById('profile-name').value        = currentUser.name || '';
+  document.getElementById('profile-position').value    = currentUser.position || '';
+  document.getElementById('profile-designation').value = currentUser.designation || '';
+
+  // Photo preview
+  const preview = document.getElementById('profile-photo-preview');
+  document.getElementById('profile-photo-input').value = '';
+  if (currentUser.photoUrl) {
+    preview.innerHTML = `<img src="${currentUser.photoUrl}" style="width:100%;height:100%;object-fit:cover;" />`;
+  } else {
+    preview.innerHTML = currentUser.name ? currentUser.name[0].toUpperCase() : '👤';
+    preview.style.fontSize = '40px';
+    preview.style.color = 'var(--gold)';
+    preview.style.fontFamily = "'Syne', sans-serif";
+    preview.style.fontWeight = '800';
+  }
+}
+
+function previewProfilePhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (file.size > 2 * 1024 * 1024) { showToast('⚠️ Photo must be under 2MB.'); input.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    profilePhotoBase64 = e.target.result;
+    const preview = document.getElementById('profile-photo-preview');
+    preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" />`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveProfile() {
+  const name        = document.getElementById('profile-name').value.trim();
+  const position    = document.getElementById('profile-position').value.trim();
+  const designation = document.getElementById('profile-designation').value.trim();
+
+  if (!name) { showToast('Name cannot be empty.'); return; }
+
+  const btn = document.querySelector('#page-my-profile .btn-gold');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+
+  try {
+    if (currentRole === 'employee') {
+      // Update Firestore account doc
+      const acct = ACCOUNTS.find(a => a.username === currentUser.username);
+      if (!acct) { showToast('⚠️ Account not found.'); return; }
+      const update = { name, position, designation };
+      if (profilePhotoBase64) update.photoUrl = profilePhotoBase64;
+      await db.collection('accounts').doc(acct._id).update(update);
+      // Update currentUser in memory & session
+      currentUser.name        = name;
+      currentUser.position    = position;
+      currentUser.designation = designation;
+      if (profilePhotoBase64) currentUser.photoUrl = profilePhotoBase64;
+
+    } else {
+      // Admin — update in-memory + sessionStorage only (no Firestore account doc)
+      currentUser.name = name;
+      if (profilePhotoBase64) currentUser.photoUrl = profilePhotoBase64;
+    }
+
+    // Persist session
+    sessionStorage.setItem('dmw_session', JSON.stringify({ user: currentUser, role: currentRole }));
+
+    // Refresh sidebar
+    const avatarEl = document.getElementById('user-avatar');
+    if (currentUser.photoUrl) {
+      avatarEl.innerHTML = `<img src="${currentUser.photoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+      avatarEl.style.background = 'transparent';
+    } else {
+      avatarEl.textContent = currentUser.name[0];
+      avatarEl.style.background = '';
+    }
+    document.getElementById('user-name').textContent = currentUser.name;
+
+    showToast('✅ Profile saved!');
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to save profile.');
+  } finally {
+    if (btn) { btn.textContent = '💾 Save Profile'; btn.disabled = false; }
+  }
 }
 
 // ════════════════════════════════════════════════════════════
