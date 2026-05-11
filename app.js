@@ -1143,8 +1143,6 @@ function renderManageAccounts() {
   }).join('');
 }
 
-let editingAccountPhotoBase64 = null; // holds base64 of newly selected photo
-
 let editingAccountId = null;
 let editingAccountPhotoBase64 = null; // holds base64 of newly selected photo
 
