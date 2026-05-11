@@ -297,12 +297,21 @@
               <label>Full Name</label>
               <input type="text" id="profile-name" placeholder="Your full name" />
             </div>
-            <!-- Employee-only fields -->
-            <div class="field profile-employee-only" style="grid-column:1/-1;">
+            <div class="field" style="grid-column:1/-1;" id="profile-division-wrap">
+              <label>Division</label>
+              <select id="profile-division" style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:10px;font-family:'DM Sans';font-size:14px;color:var(--text);background:var(--white);outline:none;">
+                <option value="">-- Select Division --</option>
+                <option value="Migrant Workers Processing Division">Migrant Workers Processing Division</option>
+                <option value="Migrant Workers Protection Division">Migrant Workers Protection Division</option>
+                <option value="Migrant Workers Welfare and Reintegration Services Division">Migrant Workers Welfare and Reintegration Services Division</option>
+                <option value="Finance and Administration Division">Finance and Administration Division</option>
+              </select>
+            </div>
+            <div class="field" style="grid-column:1/-1;">
               <label>Position</label>
               <input type="text" id="profile-position" placeholder="e.g., Administrative Officer II" />
             </div>
-            <div class="field profile-employee-only" style="grid-column:1/-1;">
+            <div class="field" style="grid-column:1/-1;">
               <label>Designation</label>
               <input type="text" id="profile-designation" placeholder="e.g., Records Officer" />
             </div>
