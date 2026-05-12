@@ -232,8 +232,7 @@ function setupApp() {
       <div class="nav-section-label">Requests</div>
       <div class="nav-item active" onclick="navigate('page-new-request')"><span class="icon">➕</span> New Request</div>
       <div class="nav-item" onclick="navigate('page-my-requests')"><span class="icon">📋</span> My Requests</div>
-      <div class="nav-section-label">Reference</div>
-      <div class="nav-item" onclick="navigate('page-inventory')"><span class="icon">📦</span> View Supplies</div>`;
+    `;
   }
   navigate(currentRole === 'admin' ? 'page-dashboard' : 'page-new-request');
 }
