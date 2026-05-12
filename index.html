@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DMW RO-CAR | Supply Procurement System</title>
+<title>DMW RO-CAR | Supply Monitoring and Requisition System</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=101">
 </head>
@@ -14,7 +14,7 @@
   <div class="login-card">
     <div class="login-logo">
       <div class="badge">⚡ DMW RO-CAR</div>
-      <h1>Supply Procurement<br>& Request System</h1>
+      <h1>Supply Monitoring and<br>Requisition System</h1>
       <p>Department of Migrant Workers – CAR Region</p>
     </div>
     <div class="role-tabs">
@@ -134,20 +134,24 @@
           <div class="form-grid">
             <div class="field">
               <label>Division</label>
+              <!-- Employee: locked display. Admin: dropdown -->
+              <div id="req-division-locked" class="profile-locked-field" style="display:none;"></div>
               <select id="req-division" style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:10px;font-family:'DM Sans';font-size:14px;color:var(--text);background:var(--white);outline:none;">
-              <option value="">-- Select Division --</option>
-              <option value="Migrant Workers Processing Division">Migrant Workers Processing Division</option>
-              <option value="Migrant Workers Protection Division">Migrant Workers Protection Division</option>
-              <option value="Migrant Workers Welfare and Reintegration Services Division">Migrant Workers Welfare and Reintegration Services Division</option>
-              <option value="Finance and Administration Division">Finance and Administration Division</option>
+                <option value="">-- Select Division --</option>
+                <option value="Migrant Workers Processing Division">Migrant Workers Processing Division</option>
+                <option value="Migrant Workers Protection Division">Migrant Workers Protection Division</option>
+                <option value="Migrant Workers Welfare and Reintegration Services Division">Migrant Workers Welfare and Reintegration Services Division</option>
+                <option value="Finance and Administration Division">Finance and Administration Division</option>
               </select>
             </div>
             <div class="field">
               <label>Designation</label>
+              <div id="req-designation-locked" class="profile-locked-field" style="display:none;"></div>
               <input type="text" id="req-designation" placeholder="e.g., Administrative Officer" />
             </div>
             <div class="field">
               <label>Requestor Name</label>
+              <div id="req-name-locked" class="profile-locked-field" style="display:none;"></div>
               <input type="text" id="req-name" placeholder="Your full name" />
             </div>
             <div class="field">
