@@ -217,7 +217,6 @@ function setupApp() {
     nav.innerHTML = `
       <div class="nav-section-label">Management</div>
       <div class="nav-item active" onclick="navigate('page-dashboard')"><span class="icon">📊</span> Dashboard</div>
-      <div class="nav-item" onclick="navigate('page-inventory')"><span class="icon">📦</span> Inventory</div>
       <div class="nav-item" onclick="navigate('page-requests')">
         <span class="icon">📋</span> All Requests
         <span class="nav-badge" id="pending-badge" style="display:none">0</span>
