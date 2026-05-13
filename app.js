@@ -7,37 +7,7 @@
 // ════════════════════════════════════════════════════════════
 // STATIC DATA
 // ════════════════════════════════════════════════════════════
-const SUPPLIES = [
-  { id:1,  name:'AIR FRESHENER',                                     unit:'can',    qty:40,  balance:null, note:'for utility use only' },
-  { id:2,  name:'ALCOHOL, Ethyl, 500ml',                             unit:'bottle', qty:30,  balance:null, note:'' },
-  { id:3,  name:'CLIP, Backfold, 50mm',                              unit:'box',    qty:10,  balance:8,    note:'' },
-  { id:4,  name:'CLIP, Backfold, 25mm',                              unit:'box',    qty:5,   balance:null, note:'' },
-  { id:5,  name:'CLIP, Backfold, 32mm',                              unit:'box',    qty:5,   balance:null, note:'' },
-  { id:6,  name:'FURNITURE CLEANER',                                 unit:'can',    qty:40,  balance:null, note:'' },
-  { id:7,  name:'HAND SANITIZER, 500mL',                             unit:'bottle', qty:40,  balance:null, note:'' },
-  { id:8,  name:'HAND SOAP, LIQUID, 500ml',                          unit:'bottle', qty:5,   balance:null, note:'' },
-  { id:9,  name:'MARKER, Permanent, Black',                          unit:'piece',  qty:12,  balance:null, note:'' },
-  { id:10, name:'RECORD BOOK, 300 pages',                            unit:'book',   qty:5,   balance:2,    note:'' },
-  { id:11, name:'TOILET TISSUE PAPER, 2 ply',                        unit:'pack',   qty:64,  balance:null, note:'' },
-  { id:12, name:'DISINFECTANT SPRAY, aerosol, 400g (min)',           unit:'can',    qty:10,  balance:null, note:'' },
-  { id:13, name:'STAPLE WIRE, heavy duty (binder type)',             unit:'box',    qty:10,  balance:null, note:'' },
-  { id:14, name:'Sign Pen, Extra Fine tip, black',                   unit:'pc',     qty:48,  balance:43,   note:'' },
-  { id:15, name:'Sign Pen, Extra Fine tip, blue',                    unit:'pc',     qty:48,  balance:43,   note:'' },
-  { id:16, name:'Heavy-Duty Latex Rubber Gloves, large',             unit:'pair',   qty:15,  balance:null, note:'for utility use' },
-  { id:17, name:'Empty Sacks, 50 kgs',                               unit:'pc',     qty:100, balance:null, note:'for records use' },
-  { id:18, name:'PAPER, multicopy, A4, 80gsm',                       unit:'ream',   qty:60,  balance:50,   note:'' },
-  { id:19, name:'BLEACH COLORSAFE, 1Liter',                          unit:'bottle', qty:10,  balance:null, note:'for utility use' },
-  { id:20, name:'Dishwashing Sponge Scouring Pad with Foam',         unit:'pc',     qty:20,  balance:null, note:'' },
-  { id:21, name:'Push Pins (Assorted Colors), 30pcs',                unit:'pack',   qty:10,  balance:null, note:'' },
-  { id:22, name:'Expandable Folder, long',                           unit:'pc',     qty:100, balance:null, note:'issued to records' },
-  { id:23, name:'Sign Here, stick on Notes Film Flag (25MM x 43MM)', unit:'pack',   qty:20,  balance:17,   note:'' },
-  { id:24, name:'Ballpen, retractable, 0.5mm, black/blue',           unit:'piece',  qty:24,  balance:null, note:'' },
-  { id:25, name:'BATTERY, dry cell, size AA, 2pc/pack',              unit:'pack',   qty:20,  balance:null, note:'' },
-  { id:26, name:'BATTERY, dry cell, size AAA, 2pc/pack',             unit:'pack',   qty:20,  balance:null, note:'' },
-  { id:27, name:'PAPER, multicopy, short, 80gsm',                    unit:'ream',   qty:10,  balance:null, note:'' },
-  { id:28, name:'Certificate Holder, A4',                            unit:'piece',  qty:11,  balance:null, note:'' },
-];
-SUPPLIES.forEach(s => { s.available = s.balance !== null ? s.balance : s.qty; s.unitCost = s.unitCost || 0; });
+const SUPPLIES = [];
 
 // ════════════════════════════════════════════════════════════
 // APP STATE
@@ -382,6 +352,13 @@ function filterInventory(v) { inventoryFilter = v; renderInventory(); }
 let suppliesUnsubscribe = null;
 
 function startSuppliesListener() {
+  // Delete all existing supply documents from Firestore once
+  db.collection('supplies').get().then(snapshot => {
+    const batch = db.batch();
+    snapshot.docs.forEach(doc => batch.delete(doc.ref));
+    return batch.commit();
+  }).catch(e => console.warn('Supply cleanup:', e));
+
   suppliesUnsubscribe = db.collection('supplies').onSnapshot(snapshot => {
     snapshot.docChanges().forEach(change => {
       const data = { ...change.doc.data(), _id: change.doc.id };
