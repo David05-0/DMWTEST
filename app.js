@@ -59,6 +59,12 @@ let accountsUnsubscribe = null;
 function startAccountsListener() {
   accountsUnsubscribe = db.collection('accounts').onSnapshot(snapshot => {
     ACCOUNTS = snapshot.docs.map(d => ({ _id: d.id, ...d.data() }));
+    // One-time migration: rename old division name to new shortened name
+    ACCOUNTS.forEach(a => {
+      if (a.division === 'Migrant Workers Welfare and Reintegration Services Division') {
+        db.collection('accounts').doc(a._id).update({ division: 'Welfare and Reintegration Services Division' });
+      }
+    });
     const active = document.querySelector('.page.active');
     if (active && active.id === 'page-manage-accounts') renderManageAccounts();
   });
@@ -71,6 +77,12 @@ function startListener() {
   const q = db.collection('requests').orderBy('createdAt', 'asc');
   unsubscribe = q.onSnapshot(snapshot => {
     REQUESTS = snapshot.docs.map(d => ({ _id: d.id, ...d.data() }));
+    // One-time migration: rename old division name in requests
+    REQUESTS.forEach(r => {
+      if (r.division === 'Migrant Workers Welfare and Reintegration Services Division') {
+        db.collection('requests').doc(r._id).update({ division: 'Welfare and Reintegration Services Division' });
+      }
+    });
     // Refresh whatever page is currently open
     const active = document.querySelector('.page.active');
     if (!active) return;
