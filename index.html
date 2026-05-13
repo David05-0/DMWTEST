@@ -142,6 +142,8 @@
                 <option value="Migrant Workers Protection Division">Migrant Workers Protection Division</option>
                 <option value="Welfare and Reintegration Services Division">Welfare and Reintegration Services Division</option>
                                 <option value="Finance and Administration Division">Finance and Administration Division</option>
+                <option value="Office of the Regional Director">Office of the Regional Director</option>
+                <option value="Office of the Regional Director">Office of the Regional Director</option>
               </select>
             </div>
             <div class="field">
@@ -238,7 +240,10 @@
       <div class="card">
         <div class="card-header">
           <h4>👥 Employee Accounts</h4>
-          <button class="btn btn-gold" onclick="openAccountModal()">+ Add Account</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-outline btn-sm" id="migrate-division-btn" onclick="migrateDivisionNames()" title="One-time fix: rename old division values in Firestore">🔧 Fix Division Names</button>
+            <button class="btn btn-gold" onclick="openAccountModal()">+ Add Account</button>
+          </div>
         </div>
         <div class="card-body table-wrap">
           <table><thead><tr>
@@ -309,6 +314,8 @@
                 <option value="Migrant Workers Protection Division">Migrant Workers Protection Division</option>
                 <option value="Welfare and Reintegration Services Division">Welfare and Reintegration Services Division</option>
                                 <option value="Finance and Administration Division">Finance and Administration Division</option>
+                <option value="Office of the Regional Director">Office of the Regional Director</option>
+                <option value="Office of the Regional Director">Office of the Regional Director</option>
               </select>
             </div>
             <div class="field" style="grid-column:1/-1;">
@@ -377,6 +384,8 @@
             <option value="Migrant Workers Protection Division">Migrant Workers Protection Division</option>
             <option value="Welfare and Reintegration Services Division">Welfare and Reintegration Services Division</option>
                         <option value="Finance and Administration Division">Finance and Administration Division</option>
+                <option value="Office of the Regional Director">Office of the Regional Director</option>
+                <option value="Office of the Regional Director">Office of the Regional Director</option>
           </select>
         </div>
       </div>
