@@ -650,16 +650,27 @@ async function updateStatus(risNo, status) {
     if (status === 'Issued') {
       const batch = db.batch();
       for (const item of req.items) {
-        // Match supply by name (since id may differ after re-adding supplies)
-        const sup = SUPPLIES.find(s => s._id && (s.id === item.id || s.name === item.name));
+        // Match by Firestore doc _id first (most reliable), then fall back to name
+        let sup = null;
+        if (item.supplyDocId) {
+          sup = SUPPLIES.find(s => s._id === item.supplyDocId);
+        }
+        if (!sup) {
+          sup = SUPPLIES.find(s => s._id && s.name.trim().toLowerCase() === String(item.name).trim().toLowerCase());
+        }
         if (sup && sup._id) {
-          const newAvail = Math.max(0, (sup.available || 0) - (Number(item.qty) || 0));
-          const newBal   = Math.max(0, (sup.balance !== null && sup.balance !== undefined ? sup.balance : sup.qty) - (Number(item.qty) || 0));
+          const qtyToDeduct = Number(item.qty) || 0;
+          const curAvail    = typeof sup.available === 'number' ? sup.available : (sup.qty || 0);
+          const curBal      = sup.balance !== null && sup.balance !== undefined ? sup.balance : sup.qty;
+          const newAvail    = Math.max(0, curAvail - qtyToDeduct);
+          const newBal      = Math.max(0, curBal   - qtyToDeduct);
           batch.update(db.collection('supplies').doc(sup._id), {
             available: newAvail,
             balance:   newBal,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
           });
+        } else {
+          console.warn('Could not find supply to deduct for item:', item.name);
         }
       }
       await batch.commit();
@@ -1126,7 +1137,7 @@ function toggleSupply(id) {
   const s = SUPPLIES.find(x => x.id === id);
   if (!s || s.available === 0) return;
   if (cart[id]) { delete cart[id]; }
-  else { cart[id] = { id, name: s.name, unit: s.unit, qty: 1, max: s.available }; }
+  else { cart[id] = { id, supplyDocId: s._id || null, name: s.name, unit: s.unit, qty: 1, max: s.available }; }
   renderSupplyPicker();
   renderCart();
 }
@@ -1178,7 +1189,7 @@ async function submitRequest() {
     designation: document.getElementById('req-designation').value.trim(),
     purpose:   document.getElementById('req-purpose').value.trim(),
     date:      today,
-    items:     items.map(i => ({ id: i.id, name: i.name, unit: i.unit, qty: i.qty })),
+    items:     items.map(i => ({ id: i.id, supplyDocId: i.supplyDocId || null, name: i.name, unit: i.unit, qty: i.qty })),
     status:    'Pending',
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
   };
