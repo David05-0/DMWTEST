@@ -358,6 +358,7 @@ function startSuppliesListener() {
       const idx  = SUPPLIES.findIndex(s => s._id === data._id);
       if (change.type === 'added' || change.type === 'modified') {
         data.available = data.balance !== null && data.balance !== undefined ? data.balance : data.qty;
+        data.deleted = data.deleted || false;
         if (idx >= 0) SUPPLIES[idx] = data;
         else SUPPLIES.push(data);
       }
@@ -377,11 +378,24 @@ function startSuppliesListener() {
 let manageSuppliesFilter = '';
 function filterManageSupplies(v) { manageSuppliesFilter = v; renderManageSupplies(); }
 
+let showDeletedSupplies = false;
+
+function toggleDeletedSupplies() {
+  showDeletedSupplies = !showDeletedSupplies;
+  const btn = document.getElementById('btn-show-deleted');
+  if (btn) btn.textContent = showDeletedSupplies ? '📦 Show Active' : '🗂️ Show Deleted';
+  renderManageSupplies();
+}
+
 function renderManageSupplies() {
-  const tb   = document.getElementById('manage-supplies-table');
-  const data = SUPPLIES.filter(s => s.name.toLowerCase().includes(manageSuppliesFilter.toLowerCase()));
+  const tb = document.getElementById('manage-supplies-table');
+
+  let data = showDeletedSupplies
+    ? SUPPLIES.filter(s => s.deleted && s.name.toLowerCase().includes(manageSuppliesFilter.toLowerCase()))
+    : SUPPLIES.filter(s => !s.deleted && s.name.toLowerCase().includes(manageSuppliesFilter.toLowerCase()));
+
   if (!data.length) {
-    tb.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">📦</div><p>No supplies found</p></div></td></tr>';
+    tb.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">📦</div><p>${showDeletedSupplies ? 'No deleted supplies.' : 'No supplies found'}</p></div></td></tr>`;
     return;
   }
   let rows = '';
@@ -389,18 +403,23 @@ function renderManageSupplies() {
     const sid      = s._id || String(s.id || '');
     const bal      = (s.balance !== null && s.balance !== undefined) ? s.balance : '—';
     const noteHtml = s.note ? '<span class="badge badge-util">' + s.note + '</span>' : '—';
-    rows += '<tr>'
+    const rowStyle = showDeletedSupplies ? 'style="opacity:0.6;"' : '';
+    rows += `<tr ${rowStyle}>`
       + '<td style="min-width:200px;font-weight:600;color:var(--text);">' + s.name + '</td>'
       + '<td>' + s.unit + '</td>'
       + '<td>' + s.qty + '</td>'
       + '<td>' + bal + '</td>'
       + '<td><strong>' + s.available + '</strong></td>'
       + '<td>' + noteHtml + '</td>'
-      + '<td>'
-      +   '<button class="btn btn-outline btn-sm" onclick="openSupplyModal(\'' + sid + '\')">&#9999;&#65039; Edit</button>'
-      +   '<button class="btn btn-danger btn-sm" onclick="deleteSupplyPrompt(\'' + sid + '\')" style="margin-left:4px">&#128465;&#65039; Delete</button>'
-      + '</td>'
-      + '</tr>';
+      + '<td>';
+    if (showDeletedSupplies) {
+      rows += '<button class="btn btn-outline btn-sm" onclick="restoreSupply(\'' + sid + '\')" style="color:var(--teal);border-color:var(--teal);">♻️ Restore</button>'
+            + '<button class="btn btn-danger btn-sm" onclick="permanentDeleteSupplyPrompt(\'' + sid + '\')" style="margin-left:4px">🗑️ Delete Forever</button>';
+    } else {
+      rows += '<button class="btn btn-outline btn-sm" onclick="openSupplyModal(\'' + sid + '\')">✏️ Edit</button>'
+            + '<button class="btn btn-danger btn-sm" onclick="deleteSupplyPrompt(\'' + sid + '\')" style="margin-left:4px">🗑️ Delete</button>';
+    }
+    rows += '</td></tr>';
   });
   tb.innerHTML = rows;
 }
@@ -501,25 +520,62 @@ async function saveSupply() {
 }
 
 let deleteSupplyId = null;
+let permanentDeleteSupplyId = null;
 
 async function confirmDeleteSupply() {
   if (!deleteSupplyId) return;
   try {
-    // Only delete from Firestore if it has a Firestore _id
-    const s = SUPPLIES.find(x => x._id === deleteSupplyId);
+    const s = SUPPLIES.find(x => (x._id || String(x.id || '')) === deleteSupplyId);
     if (s && s._id) {
-      await db.collection('supplies').doc(s._id).delete();
+      // Soft-delete: mark as deleted in Firestore
+      await db.collection('supplies').doc(s._id).update({ deleted: true });
     } else {
-      // Static supply — just remove from local array
       const idx = SUPPLIES.findIndex(x => String(x.id) === String(deleteSupplyId));
       if (idx >= 0) SUPPLIES.splice(idx, 1);
       renderManageSupplies();
     }
-    showToast('🗑️ Supply deleted.');
+    showToast('🗑️ Supply moved to deleted. You can restore it anytime.');
     closeModal('modal-confirm-delete');
   } catch(e) {
     console.error(e);
     showToast('⚠️ Failed to delete.');
+  }
+}
+
+async function restoreSupply(id) {
+  try {
+    const s = SUPPLIES.find(x => (x._id || String(x.id || '')) === id);
+    if (s && s._id) {
+      await db.collection('supplies').doc(s._id).update({ deleted: false });
+      showToast('✅ Supply restored!');
+    }
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to restore.');
+  }
+}
+
+function permanentDeleteSupplyPrompt(id) {
+  permanentDeleteSupplyId = id;
+  const s = SUPPLIES.find(x => (x._id || String(x.id || '')) === id);
+  if (!s) return;
+  if (confirm(`⚠️ Permanently delete "${s.name}"? This cannot be undone.`)) {
+    permanentDeleteSupply();
+  }
+}
+
+async function permanentDeleteSupply() {
+  if (!permanentDeleteSupplyId) return;
+  try {
+    const s = SUPPLIES.find(x => (x._id || String(x.id || '')) === permanentDeleteSupplyId);
+    if (s && s._id) {
+      await db.collection('supplies').doc(s._id).delete();
+      showToast('🗑️ Supply permanently deleted.');
+    }
+    permanentDeleteSupplyId = null;
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to permanently delete.');
   }
 }
 
@@ -589,6 +645,26 @@ async function updateStatus(risNo, status) {
   if (!req || !req._id) return;
   try {
     await db.collection('requests').doc(req._id).update({ status });
+
+    // When marking as Issued, deduct quantities from supply balances
+    if (status === 'Issued') {
+      const batch = db.batch();
+      for (const item of req.items) {
+        // Match supply by name (since id may differ after re-adding supplies)
+        const sup = SUPPLIES.find(s => s._id && (s.id === item.id || s.name === item.name));
+        if (sup && sup._id) {
+          const newAvail = Math.max(0, (sup.available || 0) - (Number(item.qty) || 0));
+          const newBal   = Math.max(0, (sup.balance !== null && sup.balance !== undefined ? sup.balance : sup.qty) - (Number(item.qty) || 0));
+          batch.update(db.collection('supplies').doc(sup._id), {
+            available: newAvail,
+            balance:   newBal,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+      }
+      await batch.commit();
+    }
+
     showToast(`RIS ${risNo} marked as ${status}`);
     closeModal('modal-ris');
   } catch (e) {
@@ -1031,7 +1107,7 @@ function backToStep1() {
 let supplyFilter = '';
 function renderSupplyPicker() {
   const grid = document.getElementById('supply-picker');
-  const data = SUPPLIES.filter(s => s.name.toLowerCase().includes(supplyFilter.toLowerCase()));
+  const data = SUPPLIES.filter(s => !s.deleted && s.name.toLowerCase().includes(supplyFilter.toLowerCase()));
   grid.innerHTML = data.map(s => {
     const inCart = cart[s.id];
     return `
