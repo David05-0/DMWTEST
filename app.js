@@ -352,13 +352,6 @@ function filterInventory(v) { inventoryFilter = v; renderInventory(); }
 let suppliesUnsubscribe = null;
 
 function startSuppliesListener() {
-  // Delete all existing supply documents from Firestore once
-  db.collection('supplies').get().then(snapshot => {
-    const batch = db.batch();
-    snapshot.docs.forEach(doc => batch.delete(doc.ref));
-    return batch.commit();
-  }).catch(e => console.warn('Supply cleanup:', e));
-
   suppliesUnsubscribe = db.collection('supplies').onSnapshot(snapshot => {
     snapshot.docChanges().forEach(change => {
       const data = { ...change.doc.data(), _id: change.doc.id };
