@@ -1746,31 +1746,46 @@ async function acceptIAR(iarId) {
   if (!iar) return;
   if (!confirm('Accept this IAR and add all items to supply inventory?')) return;
   try {
-    // Add quantities to SUPPLIES in Firestore
     for (const it of (iar.items || [])) {
-      const existing = SUPPLIES.find(s => s.name.toLowerCase() === it.name.toLowerCase());
-      if (existing) {
-        const newQty  = (existing.qty || 0) + (Number(it.qty) || 0);
-        const newBal  = (existing.available || 0) + (Number(it.qty) || 0);
-        const newData = { qty: newQty, balance: newBal, available: newBal, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-        if (it.unitCost > 0) newData.unitCost = it.unitCost;
-        if (existing._id) {
-          await db.collection('supplies').doc(existing._id).update(newData);
-        } else {
-          const ref = await db.collection('supplies').add({ ...existing, ...newData, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-          existing._id = ref.id;
-        }
-        Object.assign(existing, newData);
+      const qtyToAdd = Number(it.qty) || 0;
+      // Match existing supply by name (case-insensitive)
+      const existing = SUPPLIES.find(s => !s.deleted && s.name.trim().toLowerCase() === it.name.trim().toLowerCase());
+
+      if (existing && existing._id) {
+        // Add to existing: increment qty (total stock) and balance/available (current stock)
+        const curQty   = Number(existing.qty)     || 0;
+        const curBal   = existing.balance !== null && existing.balance !== undefined ? Number(existing.balance) : curQty;
+        const curAvail = typeof existing.available === 'number' ? Number(existing.available) : curBal;
+
+        const newQty   = curQty   + qtyToAdd;
+        const newBal   = curBal   + qtyToAdd;
+        const newAvail = curAvail + qtyToAdd;
+
+        const updateData = { qty: newQty, balance: newBal, available: newAvail, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+        if (it.unitCost && Number(it.unitCost) > 0) updateData.unitCost = Number(it.unitCost);
+
+        await db.collection('supplies').doc(existing._id).update(updateData);
       } else {
-        // New supply from IAR
-        const newSupply = { name: it.name, unit: it.unit, qty: Number(it.qty), balance: Number(it.qty), available: Number(it.qty), unitCost: it.unitCost || 0, note: '', createdAt: firebase.firestore.FieldValue.serverTimestamp() };
-        const ref = await db.collection('supplies').add(newSupply);
-        SUPPLIES.push({ ...newSupply, _id: ref.id });
+        // Create new supply entry
+        const newSupply = {
+          name:      it.name.trim(),
+          unit:      it.unit || '',
+          qty:       qtyToAdd,
+          balance:   qtyToAdd,
+          available: qtyToAdd,
+          unitCost:  it.unitCost ? Number(it.unitCost) : 0,
+          note:      '',
+          deleted:   false,
+          id:        Date.now(),
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await db.collection('supplies').add(newSupply);
       }
     }
+
     // Mark IAR as accepted
     await db.collection('iars').doc(iarId).update({ accepted: true, acceptedAt: firebase.firestore.FieldValue.serverTimestamp() });
-    showToast('✅ IAR accepted! Supplies updated.');
+    showToast('✅ IAR accepted! Supplies have been updated.');
     renderIAR();
   } catch(e) {
     console.error(e);
