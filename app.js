@@ -594,8 +594,8 @@ function renderRequests() {
     <tr>
       <td><strong>${r.risNo}</strong></td>
       <td>${r.name}</td>
-      <td>${r.division}</td>
       <td>${r.designation || r.office || ''}</td>
+      <td>${r.division}</td>
       <td>${r.date}</td>
       <td>${r.items.length} item(s)</td>
       <td><span class="badge badge-${r.status.toLowerCase()}">${r.status}</span></td>
@@ -648,32 +648,7 @@ async function updateStatus(risNo, status) {
 
     // When marking as Issued, deduct quantities from supply balances
     if (status === 'Issued') {
-      const batch = db.batch();
-      for (const item of req.items) {
-        // Match by Firestore doc _id first (most reliable), then fall back to name
-        let sup = null;
-        if (item.supplyDocId) {
-          sup = SUPPLIES.find(s => s._id === item.supplyDocId);
-        }
-        if (!sup) {
-          sup = SUPPLIES.find(s => s._id && s.name.trim().toLowerCase() === String(item.name).trim().toLowerCase());
-        }
-        if (sup && sup._id) {
-          const qtyToDeduct = Number(item.qty) || 0;
-          const curAvail    = typeof sup.available === 'number' ? sup.available : (sup.qty || 0);
-          const curBal      = sup.balance !== null && sup.balance !== undefined ? sup.balance : sup.qty;
-          const newAvail    = Math.max(0, curAvail - qtyToDeduct);
-          const newBal      = Math.max(0, curBal   - qtyToDeduct);
-          batch.update(db.collection('supplies').doc(sup._id), {
-            available: newAvail,
-            balance:   newBal,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
-        } else {
-          console.warn('Could not find supply to deduct for item:', item.name);
-        }
-      }
-      await batch.commit();
+      await deductSuppliesForRequest(req);
     }
 
     showToast(`RIS ${risNo} marked as ${status}`);
@@ -682,6 +657,58 @@ async function updateStatus(risNo, status) {
     console.error(e);
     showToast('⚠️ Failed to update. Check your connection.');
   }
+}
+
+// Core deduction logic — reusable for both new issues and retroactive sync
+async function deductSuppliesForRequest(req) {
+  const batch = db.batch();
+  let matched = 0;
+  for (const item of req.items) {
+    let sup = null;
+    // 1. Match by stored Firestore doc ID (new requests)
+    if (item.supplyDocId) {
+      sup = SUPPLIES.find(s => s._id === item.supplyDocId);
+    }
+    // 2. Fall back to case-insensitive name match
+    if (!sup) {
+      sup = SUPPLIES.find(s => s._id && s.name.trim().toLowerCase() === String(item.name).trim().toLowerCase());
+    }
+    // 3. Fall back to loose id match
+    if (!sup) {
+      sup = SUPPLIES.find(s => s._id && String(s.id) === String(item.id));
+    }
+
+    if (sup && sup._id) {
+      matched++;
+      const qtyToDeduct = Number(item.qty) || 0;
+      const curAvail    = typeof sup.available === 'number' ? sup.available : (sup.qty || 0);
+      const curBal      = (sup.balance !== null && sup.balance !== undefined) ? Number(sup.balance) : Number(sup.qty || 0);
+      const newAvail    = Math.max(0, curAvail - qtyToDeduct);
+      const newBal      = Math.max(0, curBal   - qtyToDeduct);
+      batch.update(db.collection('supplies').doc(sup._id), {
+        available: newAvail,
+        balance:   newBal,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } else {
+      console.warn(`[Deduct] No supply match for: "${item.name}"`);
+    }
+  }
+  if (matched > 0) await batch.commit();
+  return matched;
+}
+
+// Admin tool: retroactively deduct all already-issued requests
+async function resyncIssuedSupplies() {
+  const issued = REQUESTS.filter(r => r.status === 'Issued');
+  if (!issued.length) { showToast('No issued requests found.'); return; }
+
+  showToast('⏳ Re-syncing supply balances…');
+  let totalMatched = 0;
+  for (const req of issued) {
+    totalMatched += await deductSuppliesForRequest(req);
+  }
+  showToast(`✅ Re-sync done! Deducted items from ${issued.length} issued request(s).`);
 }
 
 // ════════════════════════════════════════════════════════════
