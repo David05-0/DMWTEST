@@ -1204,8 +1204,13 @@ async function submitRequest() {
   const items = Object.values(cart);
   if (!items.length) { showToast('Please add at least one item.'); return; }
 
-  const count = REQUESTS.length + 1;
-  const risNo = `RIS-2026-${String(count).padStart(4, '0')}`;
+  // Generate RIS number from the highest existing number, not array length
+  const year = new Date().getFullYear();
+  const maxNum = REQUESTS.reduce((max, r) => {
+    const match = r.risNo && r.risNo.match(/RIS-\d{4}-(\d+)/);
+    return match ? Math.max(max, parseInt(match[1], 10)) : max;
+  }, 0);
+  const risNo = `RIS-${year}-${String(maxNum + 1).padStart(4, '0')}`;
   const today = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'short', day:'numeric' });
 
   const req = {
