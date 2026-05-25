@@ -206,7 +206,7 @@ function setupApp() {
       <div class="nav-item" onclick="navigate('page-manage-supplies')"><span class="icon">🛠️</span> Manage Supplies</div>
       <div class="nav-item" onclick="navigate('page-manage-accounts')"><span class="icon">👥</span> Manage Accounts</div>
       <div class="nav-section-label">Reports</div>
-      <div class="nav-item" onclick="navigate('page-supply-ledger')"><span class="icon">📅</span> Supply Ledger</div>
+      <div class="nav-item" onclick="navigate('page-supply-ledger')"><span class="icon">📅</span> Supply Ledger (Daily)</div>
       <div class="nav-item" onclick="navigate('page-iar')"><span class="icon">✅</span> Acceptance Reports</div>`;
   } else {
     nav.innerHTML = `
@@ -233,7 +233,7 @@ function navigate(pageId) {
     'page-my-requests':      'My Requests',
     'page-manage-supplies':  'Manage Supplies',
     'page-manage-accounts':  'Manage Employee Accounts',
-    'page-supply-ledger':    'Supply Ledger (Monthly)',
+    'page-supply-ledger':    'Supply Ledger (Daily)',
     'page-iar':              'Inspection & Acceptance Reports',
     'page-my-profile':       'My Profile',
   };
@@ -1387,40 +1387,40 @@ async function confirmDeleteAccount() {
 
 
 // ════════════════════════════════════════════════════════════
-// SUPPLY LEDGER — Monthly balance tracking
+// SUPPLY LEDGER — Daily balance tracking
 // ════════════════════════════════════════════════════════════
 function renderSupplyLedger() {
   const wrap = document.getElementById('supply-ledger-wrap');
   if (!wrap) return;
 
-  // Build monthly totals from Issued requests
+  // Build daily totals from Issued requests
   const issued = REQUESTS.filter(r => r.status === 'Issued');
-  const months = {};
+  const days = {};
   issued.forEach(r => {
     const d = new Date(r.date || r.createdAt?.toDate?.() || Date.now());
-    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-    const label = d.toLocaleString('en-PH',{month:'long', year:'numeric'});
-    if (!months[key]) months[key] = { label, items: {} };
+    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    const label = d.toLocaleString('en-PH',{weekday:'long', year:'numeric', month:'long', day:'numeric'});
+    if (!days[key]) days[key] = { label, items: {} };
     (r.items || []).forEach(it => {
-      if (!months[key].items[it.name]) months[key].items[it.name] = { unit: it.unit, qty: 0 };
-      months[key].items[it.name].qty += Number(it.qty) || 0;
+      if (!days[key].items[it.name]) days[key].items[it.name] = { unit: it.unit, qty: 0 };
+      days[key].items[it.name].qty += Number(it.qty) || 0;
     });
   });
 
-  const sortedKeys = Object.keys(months).sort();
+  const sortedKeys = Object.keys(days).sort().reverse(); // most recent day first
   if (!sortedKeys.length) {
-    wrap.innerHTML = '<div class="empty-state"><div class="icon">📅</div><p>No issued requests yet. Issued requests will appear here as monthly totals.</p></div>';
+    wrap.innerHTML = '<div class="empty-state"><div class="icon">📅</div><p>No issued requests yet. Issued requests will appear here as daily totals.</p></div>';
     return;
   }
 
   wrap.innerHTML = sortedKeys.map(key => {
-    const m = months[key];
+    const m = days[key];
     const rows = Object.entries(m.items).map(([name, v]) =>
       '<tr><td>' + name + '</td><td>' + v.unit + '</td><td><strong>' + v.qty + '</strong></td></tr>'
     ).join('');
     return '<div class="card" style="margin-bottom:20px;">'
       + '<div class="card-header"><h4>📅 ' + m.label + '</h4>'
-      + '<span style="font-size:12px;color:var(--gray-400);">' + Object.keys(m.items).length + ' supply types issued</span></div>'
+      + '<span style="font-size:12px;color:var(--gray-400);">' + Object.keys(m.items).length + ' supply type(s) issued</span></div>'
       + '<div class="card-body" style="overflow-x:auto;">'
       + '<table style="width:100%;"><thead><tr><th>Supply Description</th><th>Unit</th><th>Total Qty Issued</th></tr></thead>'
       + '<tbody>' + rows + '</tbody></table></div></div>';
