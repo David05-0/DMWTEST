@@ -1204,14 +1204,17 @@ async function submitRequest() {
   const items = Object.values(cart);
   if (!items.length) { showToast('Please add at least one item.'); return; }
 
-  // Generate RIS number from the highest existing number, not array length
-  const year = new Date().getFullYear();
+  // Generate RIS number in RIS-YEAR-MONTH-SERIES format
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const yearMonthPrefix = `RIS-${year}-${month}-`;
   const maxNum = REQUESTS.reduce((max, r) => {
-    const match = r.risNo && r.risNo.match(/RIS-\d{4}-(\d+)/);
+    const match = r.risNo && r.risNo.match(/RIS-\d{4}-\d{2}-(\d+)/);
     return match ? Math.max(max, parseInt(match[1], 10)) : max;
   }, 0);
-  const risNo = `RIS-${year}-${String(maxNum + 1).padStart(4, '0')}`;
-  const today = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'short', day:'numeric' });
+  const risNo = `${yearMonthPrefix}${String(maxNum + 1).padStart(4, '0')}`;
+  const today = now.toLocaleDateString('en-PH', { year:'numeric', month:'short', day:'numeric' });
 
   const req = {
     risNo,
@@ -1553,7 +1556,7 @@ function openIARModal() {
   document.getElementById('iar-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('iar-fund').value = '';
   document.getElementById('iar-req-office').value = '';
-  iarItems = [{ name: SUPPLIES[0].name, unit: SUPPLIES[0].unit, qty: 1, unitCost: 0 }];
+  iarItems = [{ name: '', unit: '', qty: 1, unitCost: 0 }];
   renderIARItems();
   document.getElementById('modal-iar').classList.add('open');
 }
@@ -1562,13 +1565,10 @@ let iarItems = [];
 function renderIARItems() {
   const wrap = document.getElementById('iar-items-wrap');
   wrap.innerHTML = iarItems.map((it, idx) => {
-    const opts = SUPPLIES.map(s =>
-      '<option value="' + s.name + '" ' + (s.name === it.name ? 'selected' : '') + '>' + s.name + '</option>'
-    ).join('');
     return '<div style="display:grid;grid-template-columns:1fr 80px 80px 110px 36px;gap:8px;align-items:center;margin-bottom:8px;">'
-      + '<select onchange="iarItemField(' + idx + ',\'name\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:\'DM Sans\';">' + opts + '</select>'
-      + '<input type="text" value="' + it.unit + '" placeholder="Unit" onchange="iarItemField(' + idx + ',\'unit\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
-      + '<input type="number" value="' + it.qty + '" min="1" placeholder="Qty" onchange="iarItemField(' + idx + ',\'qty\',parseInt(this.value)||1)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
+      + '<input type="text" value="' + (it.name||'') + '" placeholder="Item description…" oninput="iarItemField(' + idx + ',\'name\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:\'DM Sans\';" />'
+      + '<input type="text" value="' + (it.unit||'') + '" placeholder="Unit" oninput="iarItemField(' + idx + ',\'unit\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
+      + '<input type="number" value="' + (it.qty||1) + '" min="1" placeholder="Qty" onchange="iarItemField(' + idx + ',\'qty\',parseInt(this.value)||1)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
       + '<input type="number" value="' + (it.unitCost||0) + '" min="0" step="0.01" placeholder="Unit Cost" onchange="iarItemField(' + idx + ',\'unitCost\',parseFloat(this.value)||0)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:right;" />'
       + '<button onclick="removeIARItem(' + idx + ')" style="background:var(--red);color:white;border:none;border-radius:8px;cursor:pointer;font-size:16px;height:36px;width:36px;">&#10005;</button>'
       + '</div>';
@@ -1577,16 +1577,10 @@ function renderIARItems() {
 
 function iarItemField(idx, field, value) {
   iarItems[idx][field] = value;
-  if (field === 'name') {
-    const s = SUPPLIES.find(x => x.name === value);
-    if (s) { iarItems[idx].unit = s.unit; iarItems[idx].unitCost = s.unitCost || 0; }
-    renderIARItems();
-  }
 }
 
 function addIARItem() {
-  const s = SUPPLIES[0];
-  iarItems.push({ name: s.name, unit: s.unit, qty: 1, unitCost: s.unitCost || 0 });
+  iarItems.push({ name: '', unit: '', qty: 1, unitCost: 0 });
   renderIARItems();
 }
 
@@ -1679,13 +1673,10 @@ function renderEditIARItems() {
     return;
   }
   wrap.innerHTML = editIARItems.map((it, idx) => {
-    const opts = SUPPLIES.map(s =>
-      '<option value="' + s.name + '" ' + (s.name === it.name ? 'selected' : '') + '>' + s.name + '</option>'
-    ).join('');
     return '<div style="display:grid;grid-template-columns:1fr 80px 80px 110px 36px;gap:8px;align-items:center;margin-bottom:8px;">'
-      + '<select onchange="editIARItemField(' + idx + ',\'name\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:\'DM Sans\';">' + opts + '</select>'
-      + '<input type="text" value="' + it.unit + '" placeholder="Unit" onchange="editIARItemField(' + idx + ',\'unit\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
-      + '<input type="number" value="' + it.qty + '" min="1" placeholder="Qty" onchange="editIARItemField(' + idx + ',\'qty\',parseInt(this.value)||1)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
+      + '<input type="text" value="' + (it.name||'') + '" placeholder="Item description…" oninput="editIARItemField(' + idx + ',\'name\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:\'DM Sans\';" />'
+      + '<input type="text" value="' + (it.unit||'') + '" placeholder="Unit" oninput="editIARItemField(' + idx + ',\'unit\',this.value)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
+      + '<input type="number" value="' + (it.qty||1) + '" min="1" placeholder="Qty" onchange="editIARItemField(' + idx + ',\'qty\',parseInt(this.value)||1)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:center;" />'
       + '<input type="number" value="' + (it.unitCost||0) + '" min="0" step="0.01" placeholder="Unit Cost" onchange="editIARItemField(' + idx + ',\'unitCost\',parseFloat(this.value)||0)" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;text-align:right;" />'
       + '<button onclick="removeEditIARItem(' + idx + ')" style="background:var(--red);color:white;border:none;border-radius:8px;cursor:pointer;font-size:16px;height:36px;width:36px;">&#10005;</button>'
       + '</div>';
@@ -1694,16 +1685,10 @@ function renderEditIARItems() {
 
 function editIARItemField(idx, field, value) {
   editIARItems[idx][field] = value;
-  if (field === 'name') {
-    const s = SUPPLIES.find(x => x.name === value);
-    if (s) { editIARItems[idx].unit = s.unit; editIARItems[idx].unitCost = s.unitCost || 0; }
-    renderEditIARItems();
-  }
 }
 
 function addEditIARItem() {
-  const s = SUPPLIES[0];
-  editIARItems.push({ name: s.name, unit: s.unit, qty: 1, unitCost: s.unitCost || 0 });
+  editIARItems.push({ name: '', unit: '', qty: 1, unitCost: 0 });
   renderEditIARItems();
 }
 
@@ -1833,6 +1818,17 @@ function renderMyProfile() {
     el.style.display = '';
   });
 
+  // Show Change Password only for employees
+  const pwSection = document.getElementById('change-password-section');
+  if (pwSection) {
+    pwSection.style.display = currentRole === 'employee' ? '' : 'none';
+    // Clear password fields on open
+    ['pw-current','pw-new','pw-confirm'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+  }
+
   // Populate fields from currentUser
   document.getElementById('profile-name').value        = currentUser.name || '';
   document.getElementById('profile-position').value    = currentUser.position || '';
@@ -1914,6 +1910,39 @@ async function saveProfile() {
     showToast('⚠️ Failed to save profile.');
   } finally {
     if (btn) { btn.textContent = '💾 Save Profile'; btn.disabled = false; }
+  }
+}
+
+async function changePassword() {
+  if (currentRole !== 'employee') return;
+  const current = document.getElementById('pw-current').value;
+  const newPw   = document.getElementById('pw-new').value;
+  const confirm = document.getElementById('pw-confirm').value;
+
+  if (!current || !newPw || !confirm) { showToast('Please fill in all password fields.'); return; }
+
+  const acct = ACCOUNTS.find(a => a.username === currentUser.username);
+  if (!acct) { showToast('⚠️ Account not found.'); return; }
+  if (acct.password !== current) { showToast('⚠️ Current password is incorrect.'); return; }
+  if (newPw.length < 6) { showToast('⚠️ New password must be at least 6 characters.'); return; }
+  if (newPw !== confirm) { showToast('⚠️ New passwords do not match.'); return; }
+
+  const btn = document.querySelector('#change-password-section .btn-outline');
+  if (btn) { btn.textContent = 'Updating…'; btn.disabled = true; }
+
+  try {
+    await db.collection('accounts').doc(acct._id).update({ password: newPw });
+    // Clear fields
+    ['pw-current','pw-new','pw-confirm'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    showToast('✅ Password updated successfully!');
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Failed to update password. Check connection.');
+  } finally {
+    if (btn) { btn.textContent = '🔒 Update Password'; btn.disabled = false; }
   }
 }
 
