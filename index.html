@@ -331,6 +331,28 @@
           <div style="margin-top:24px;display:flex;gap:10px;">
             <button class="btn btn-gold" style="flex:1;" onclick="saveProfile()">💾 Save Profile</button>
           </div>
+
+          <!-- Change Password (Employee only) -->
+          <div id="change-password-section" style="display:none;margin-top:28px;border-top:1.5px solid var(--gray-100);padding-top:24px;">
+            <h5 style="font-family:'Syne';font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;text-transform:uppercase;letter-spacing:1px;">🔑 Change Password</h5>
+            <div class="form-grid">
+              <div class="field" style="grid-column:1/-1;">
+                <label>Current Password</label>
+                <input type="password" id="pw-current" placeholder="Enter current password" autocomplete="off" />
+              </div>
+              <div class="field" style="grid-column:1/-1;">
+                <label>New Password</label>
+                <input type="password" id="pw-new" placeholder="Enter new password" autocomplete="off" />
+              </div>
+              <div class="field" style="grid-column:1/-1;">
+                <label>Confirm New Password</label>
+                <input type="password" id="pw-confirm" placeholder="Re-enter new password" autocomplete="off" />
+              </div>
+            </div>
+            <div style="margin-top:16px;">
+              <button class="btn btn-outline" style="width:100%;" onclick="changePassword()">🔒 Update Password</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
