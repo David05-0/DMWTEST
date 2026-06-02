@@ -1311,24 +1311,20 @@ async function saveAccount() {
 
   const data = { name, username, password, division, position, designation, role: 'Employee' };
 
-  const btn  = document.querySelector('#modal-account .btn-gold');
-  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+  // Close immediately — write happens in background
+  closeModal('modal-account');
+  showToast(editingAccountId ? '✅ Account updated!' : '✅ Account created!');
 
   try {
     if (editingAccountId) {
-      await db.collection('accounts').doc(editingAccountId).update(data);
-      showToast('✅ Account updated!');
+      db.collection('accounts').doc(editingAccountId).update(data);
     } else {
       data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      await db.collection('accounts').add(data);
-      showToast('✅ Account created!');
+      db.collection('accounts').add(data);
     }
-    closeModal('modal-account');
   } catch(e) {
     console.error(e);
     showToast('⚠️ Failed to save account. Check connection.');
-  } finally {
-    if (btn) { btn.textContent = 'Save Account'; btn.disabled = false; }
   }
 }
 
@@ -1794,7 +1790,7 @@ function renderMyProfile() {
   document.getElementById('profile-division').value    = currentUser.division || '';
 }
 
-async function saveProfile() {
+function saveProfile() {
   const name        = document.getElementById('profile-name').value.trim();
   const position    = document.getElementById('profile-position').value.trim();
   const designation = document.getElementById('profile-designation').value.trim();
@@ -1802,37 +1798,28 @@ async function saveProfile() {
 
   if (!name) { showToast('Name cannot be empty.'); return; }
 
-  const btn = document.querySelector('#page-my-profile .btn-gold');
-  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+  // Update UI immediately
+  currentUser.name        = name;
+  currentUser.position    = position;
+  currentUser.designation = designation;
+  currentUser.division    = division;
 
-  try {
-    if (currentRole === 'employee') {
-      const acct = ACCOUNTS.find(a => a.username === currentUser.username);
-      if (!acct) { showToast('⚠️ Account not found.'); return; }
-      await db.collection('accounts').doc(acct._id).update({ name, position, designation, division });
+  sessionStorage.setItem('dmw_session', JSON.stringify({ user: currentUser, role: currentRole }));
+
+  const avatarEl = document.getElementById('user-avatar');
+  avatarEl.textContent = currentUser.name[0];
+  avatarEl.style.background = '';
+  document.getElementById('user-name').textContent = currentUser.name;
+
+  showToast('✅ Profile saved! Your info will auto-fill in new requests.');
+
+  // Write to Firestore in background
+  if (currentRole === 'employee') {
+    const acct = ACCOUNTS.find(a => a.username === currentUser.username);
+    if (acct) {
+      db.collection('accounts').doc(acct._id).update({ name, position, designation, division })
+        .catch(e => { console.error(e); showToast('⚠️ Failed to sync profile. Check connection.'); });
     }
-
-    // Update currentUser in memory for both roles
-    currentUser.name        = name;
-    currentUser.position    = position;
-    currentUser.designation = designation;
-    currentUser.division    = division;
-
-    // Persist session
-    sessionStorage.setItem('dmw_session', JSON.stringify({ user: currentUser, role: currentRole }));
-
-    // Refresh sidebar name and avatar initial
-    const avatarEl = document.getElementById('user-avatar');
-    avatarEl.textContent = currentUser.name[0];
-    avatarEl.style.background = '';
-    document.getElementById('user-name').textContent = currentUser.name;
-
-    showToast('✅ Profile saved! Your info will auto-fill in new requests.');
-  } catch(e) {
-    console.error(e);
-    showToast('⚠️ Failed to save profile.');
-  } finally {
-    if (btn) { btn.textContent = '💾 Save Profile'; btn.disabled = false; }
   }
 }
 
