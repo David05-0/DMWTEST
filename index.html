@@ -248,7 +248,7 @@
         </div>
         <div class="card-body table-wrap">
           <table><thead><tr>
-            <th>Photo</th><th>Full Name</th><th>Username</th><th>Position</th><th>Designation</th><th>Division</th><th>Role</th><th>Actions</th>
+            <th>Full Name</th><th>Username</th><th>Position</th><th>Designation</th><th>Division</th><th>Role</th><th>Actions</th>
           </tr></thead>
           <tbody id="manage-accounts-table"></tbody></table>
         </div>
@@ -289,18 +289,6 @@
       <div class="card" style="max-width:520px;margin:0 auto;">
         <div class="card-header"><h4>👤 My Profile</h4></div>
         <div class="card-body" style="padding:28px 32px;">
-
-          <!-- Photo upload -->
-          <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:28px;">
-            <div id="profile-photo-preview"
-                 onclick="document.getElementById('profile-photo-input').click()"
-                 style="width:110px;height:110px;border-radius:50%;background:var(--navy-light);border:3px solid var(--gold);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:48px;cursor:pointer;transition:box-shadow 0.2s;">
-              👤
-            </div>
-            <input type="file" id="profile-photo-input" accept="image/*" style="display:none;" onchange="previewProfilePhoto(this)" />
-            <button class="btn btn-outline btn-sm" onclick="document.getElementById('profile-photo-input').click()" style="margin-top:12px;">📷 Change Photo</button>
-            <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">JPG or PNG, max 2MB</div>
-          </div>
 
           <div class="form-grid">
             <div class="field" style="grid-column:1/-1;">
@@ -368,15 +356,6 @@
       <button class="modal-close" onclick="closeModal('modal-account')">✕</button>
     </div>
     <div class="modal-body">
-      <!-- Profile Image Upload -->
-      <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px;">
-        <div id="acct-photo-preview" style="width:90px;height:90px;border-radius:50%;background:var(--gray-100);border:3px solid var(--gray-200);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:36px;color:var(--gray-400);margin-bottom:10px;cursor:pointer;" onclick="document.getElementById('acct-photo-input').click()">
-          👤
-        </div>
-        <input type="file" id="acct-photo-input" accept="image/*" style="display:none;" onchange="previewAccountPhoto(this)" />
-        <button class="btn btn-outline btn-sm" onclick="document.getElementById('acct-photo-input').click()" type="button">📷 Upload Photo</button>
-        <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">JPG, PNG — max 2MB. Stored as profile photo.</div>
-      </div>
       <div class="form-grid">
         <div class="field" style="grid-column:1/-1">
           <label>Full Name</label>
