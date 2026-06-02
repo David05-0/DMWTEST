@@ -89,7 +89,6 @@ function doLogin() {
   const err = document.getElementById('login-error');
 
   if (selectedRole === 'admin') {
-    // Admin: check hardcoded credential
     if (u === ADMIN_CREDENTIAL.user && p === ADMIN_CREDENTIAL.pass) {
       err.style.display = 'none';
       currentUser = ADMIN_CREDENTIAL;
@@ -99,27 +98,32 @@ function doLogin() {
       err.style.display = 'block';
     }
   } else {
-    // Employee: check Firestore accounts (loaded at page load)
-    const found = ACCOUNTS.find(a => a.username === u && a.password === p);
-    if (found) {
-      err.style.display = 'none';
-      currentUser = { name: found.name, role: 'Employee', username: found.username, division: found.division || '', position: found.position || '', designation: found.designation || '' };
-      currentRole = 'employee';
-      launchApp();
-    } else {
-      // Fallback check — accounts may still be loading, query directly
-      db.collection('accounts').where('username','==',u).where('password','==',p).get().then(snap => {
-        if (!snap.empty) {
-          const data = snap.docs[0].data();
-          err.style.display = 'none';
-          currentUser = { name: data.name, role: 'Employee', username: data.username, division: data.division || '', position: data.position || '', designation: data.designation || '' };
-          currentRole = 'employee';
-          launchApp();
-        } else {
-          err.style.display = 'block';
-        }
-      }).catch(() => { err.style.display = 'block'; });
-    }
+    // Always query Firestore directly — never trust the in-memory cache for login
+    const btn = document.querySelector('.btn-login');
+    if (btn) { btn.textContent = 'Signing in…'; btn.disabled = true; }
+    db.collection('accounts').where('username', '==', u).get().then(snap => {
+      const match = snap.docs.find(d => d.data().password === p);
+      if (match) {
+        const data = match.data();
+        err.style.display = 'none';
+        currentUser = {
+          name:        data.name        || '',
+          role:        'Employee',
+          username:    data.username    || '',
+          division:    data.division    || '',
+          position:    data.position    || '',
+          designation: data.designation || '',
+        };
+        currentRole = 'employee';
+        launchApp();
+      } else {
+        err.style.display = 'block';
+      }
+    }).catch(() => {
+      err.style.display = 'block';
+    }).finally(() => {
+      if (btn) { btn.textContent = 'Sign In →'; btn.disabled = false; }
+    });
   }
 }
 
