@@ -103,7 +103,7 @@ function doLogin() {
     const found = ACCOUNTS.find(a => a.username === u && a.password === p);
     if (found) {
       err.style.display = 'none';
-      currentUser = { name: found.name, role: 'Employee', username: found.username, division: found.division || '', position: found.position || '', designation: found.designation || '', photoUrl: found.photoUrl || '' };
+      currentUser = { name: found.name, role: 'Employee', username: found.username, division: found.division || '', position: found.position || '', designation: found.designation || '' };
       currentRole = 'employee';
       launchApp();
     } else {
@@ -112,7 +112,7 @@ function doLogin() {
         if (!snap.empty) {
           const data = snap.docs[0].data();
           err.style.display = 'none';
-          currentUser = { name: data.name, role: 'Employee', username: data.username, division: data.division || '', position: data.position || '', designation: data.designation || '', photoUrl: data.photoUrl || '' };
+          currentUser = { name: data.name, role: 'Employee', username: data.username, division: data.division || '', position: data.position || '', designation: data.designation || '' };
           currentRole = 'employee';
           launchApp();
         } else {
@@ -184,13 +184,8 @@ function confirmLogout() {
 // ════════════════════════════════════════════════════════════
 function setupApp() {
   const avatarEl = document.getElementById('user-avatar');
-  if (currentUser.photoUrl) {
-    avatarEl.innerHTML = `<img src="${currentUser.photoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
-    avatarEl.style.background = 'transparent';
-  } else {
-    avatarEl.textContent = currentUser.name[0];
-    avatarEl.style.background = '';
-  }
+  avatarEl.textContent = currentUser.name[0];
+  avatarEl.style.background = '';
   document.getElementById('user-name').textContent       = currentUser.name;
   document.getElementById('user-role-label').textContent = currentUser.role;
 
@@ -1255,12 +1250,8 @@ function renderManageAccounts() {
     return;
   }
   tb.innerHTML = ACCOUNTS.map(a => {
-    const photoHtml = a.photoUrl
-      ? `<img src="${a.photoUrl}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid var(--gray-200);" />`
-      : `<div style="width:38px;height:38px;border-radius:50%;background:var(--navy-light);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--gold);">${a.name[0]}</div>`;
     return `
     <tr>
-      <td>${photoHtml}</td>
       <td><strong>${a.name}</strong></td>
       <td>${a.username}</td>
       <td>${a.position || '—'}</td>
@@ -1276,30 +1267,10 @@ function renderManageAccounts() {
 }
 
 let editingAccountId = null;
-let editingAccountPhotoBase64 = null; // holds base64 of newly selected photo
-
-function previewAccountPhoto(input) {
-  if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
-  if (file.size > 2 * 1024 * 1024) { showToast('⚠️ Photo must be under 2MB.'); input.value = ''; return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    editingAccountPhotoBase64 = e.target.result;
-    const preview = document.getElementById('acct-photo-preview');
-    preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" />`;
-  };
-  reader.readAsDataURL(file);
-}
 
 function openAccountModal(accountId) {
   editingAccountId = accountId || null;
-  editingAccountPhotoBase64 = null;
   document.getElementById('modal-account-title').textContent = accountId ? '✏️ Edit Account' : '➕ Add Employee Account';
-
-  // Reset photo preview
-  const preview = document.getElementById('acct-photo-preview');
-  preview.innerHTML = '👤';
-  document.getElementById('acct-photo-input').value = '';
 
   if (accountId) {
     const a = ACCOUNTS.find(x => x._id === accountId);
@@ -1310,9 +1281,6 @@ function openAccountModal(accountId) {
     document.getElementById('acct-division').value    = a.division || '';
     document.getElementById('acct-position').value    = a.position || '';
     document.getElementById('acct-designation').value = a.designation || '';
-    if (a.photoUrl) {
-      preview.innerHTML = `<img src="${a.photoUrl}" style="width:100%;height:100%;object-fit:cover;" />`;
-    }
   } else {
     document.getElementById('acct-name').value        = '';
     document.getElementById('acct-username').value    = '';
@@ -1342,11 +1310,6 @@ async function saveAccount() {
   if (duplicate) { showToast('⚠️ Username already exists. Choose another.'); return; }
 
   const data = { name, username, password, division, position, designation, role: 'Employee' };
-
-  // Attach photo if a new one was selected
-  if (editingAccountPhotoBase64) {
-    data.photoUrl = editingAccountPhotoBase64;
-  }
 
   const btn  = document.querySelector('#modal-account .btn-gold');
   if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
@@ -1808,11 +1771,7 @@ function viewIAR(iarId) {
 // ════════════════════════════════════════════════════════════
 // MY PROFILE — self-edit for both admin and employee
 // ════════════════════════════════════════════════════════════
-let profilePhotoBase64 = null;
-
 function renderMyProfile() {
-  profilePhotoBase64 = null;
-
   // All roles see all fields now
   document.querySelectorAll('.profile-employee-only').forEach(el => {
     el.style.display = '';
@@ -1822,7 +1781,6 @@ function renderMyProfile() {
   const pwSection = document.getElementById('change-password-section');
   if (pwSection) {
     pwSection.style.display = currentRole === 'employee' ? '' : 'none';
-    // Clear password fields on open
     ['pw-current','pw-new','pw-confirm'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
@@ -1834,32 +1792,6 @@ function renderMyProfile() {
   document.getElementById('profile-position').value    = currentUser.position || '';
   document.getElementById('profile-designation').value = currentUser.designation || '';
   document.getElementById('profile-division').value    = currentUser.division || '';
-
-  // Photo preview
-  const preview = document.getElementById('profile-photo-preview');
-  document.getElementById('profile-photo-input').value = '';
-  if (currentUser.photoUrl) {
-    preview.innerHTML = `<img src="${currentUser.photoUrl}" style="width:100%;height:100%;object-fit:cover;" />`;
-  } else {
-    preview.innerHTML = currentUser.name ? currentUser.name[0].toUpperCase() : '👤';
-    preview.style.fontSize = '40px';
-    preview.style.color = 'var(--gold)';
-    preview.style.fontFamily = "'Syne', sans-serif";
-    preview.style.fontWeight = '800';
-  }
-}
-
-function previewProfilePhoto(input) {
-  if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
-  if (file.size > 2 * 1024 * 1024) { showToast('⚠️ Photo must be under 2MB.'); input.value = ''; return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    profilePhotoBase64 = e.target.result;
-    const preview = document.getElementById('profile-photo-preview');
-    preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" />`;
-  };
-  reader.readAsDataURL(file);
 }
 
 async function saveProfile() {
@@ -1875,12 +1807,9 @@ async function saveProfile() {
 
   try {
     if (currentRole === 'employee') {
-      // Update Firestore account doc
       const acct = ACCOUNTS.find(a => a.username === currentUser.username);
       if (!acct) { showToast('⚠️ Account not found.'); return; }
-      const update = { name, position, designation, division };
-      if (profilePhotoBase64) update.photoUrl = profilePhotoBase64;
-      await db.collection('accounts').doc(acct._id).update(update);
+      await db.collection('accounts').doc(acct._id).update({ name, position, designation, division });
     }
 
     // Update currentUser in memory for both roles
@@ -1888,20 +1817,14 @@ async function saveProfile() {
     currentUser.position    = position;
     currentUser.designation = designation;
     currentUser.division    = division;
-    if (profilePhotoBase64) currentUser.photoUrl = profilePhotoBase64;
 
-    // Persist session (works for admin too)
+    // Persist session
     sessionStorage.setItem('dmw_session', JSON.stringify({ user: currentUser, role: currentRole }));
 
-    // Refresh sidebar avatar and name
+    // Refresh sidebar name and avatar initial
     const avatarEl = document.getElementById('user-avatar');
-    if (currentUser.photoUrl) {
-      avatarEl.innerHTML = `<img src="${currentUser.photoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
-      avatarEl.style.background = 'transparent';
-    } else {
-      avatarEl.textContent = currentUser.name[0];
-      avatarEl.style.background = '';
-    }
+    avatarEl.textContent = currentUser.name[0];
+    avatarEl.style.background = '';
     document.getElementById('user-name').textContent = currentUser.name;
 
     showToast('✅ Profile saved! Your info will auto-fill in new requests.');
